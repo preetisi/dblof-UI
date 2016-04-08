@@ -21,6 +21,19 @@
 (defn parse-json-string [x]
   (js->clj (js/JSON.parse x)))
 
+(defmacro jslog
+  "Synopsis: (jslog \"stuff:\" {:a 1 :b 2})
+   Logs, converting to JavaScript objects. Returns last argument."
+  [& args]
+  `(log-with-transform cljs.core/clj->js ~@args))
+
+
+(defmacro cljslog
+  "Synopsis: (utils/cljslog \"end:\" (assoc (utils/cljslog \"start:\" {:b 3}) :a 4))
+   Logs, pretty printing ClojureScript arguments. Returns last argument."
+  [& args]
+  `(log-with-transform #(with-out-str (cljs.pprint/pprint %)) ~@args))
+
 
 (def use-live-data? (atom true))
 

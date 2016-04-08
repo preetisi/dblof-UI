@@ -23,9 +23,9 @@
 (defproject macarthur-lab/dblof-ui "0.0.1"
   :dependencies
   [
-   [dmohs/react "0.2.12"]
-   [org.clojure/clojure "1.7.0"]
-   [org.clojure/clojurescript "1.7.228"]
+    [dmohs/react "0.2.12"]
+    [org.clojure/clojure "1.7.0"]
+    [org.clojure/clojurescript "1.7.228"]
    ]
   :plugins [[lein-cljsbuild "1.1.2"] [lein-resource "15.10.2"]]
   :profiles {:dev {:plugins [[lein-figwheel "0.5.0" :exclusions [org.clojure/clojure]]]
@@ -61,4 +61,4 @@
                                 :compiler {:output-dir "resources/public/build"
                                            :asset-path "build"
                                            :output-to "resources/public/compiled.js"}}}}
-  :resource {:resource-paths ["src/static"] :skip-stencil [#".*"]})
+  :resource {:resource-paths ["src/static" "lib/react-select"] :skip-stencil [#".*"]})
