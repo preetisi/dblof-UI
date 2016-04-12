@@ -1,14 +1,10 @@
 (ns macarthur-lab.dblof-ui.core
   (:require
+   cljsjs.react-select
     devcards.core
     [dmohs.react :as react]
     [macarthur-lab.dblof-ui.utils :as u])
   (:require-macros [devcards.core :refer [defcard]]))
-
-
-(let [react-select (.createElement js/document "script")]
-  (.setAttribute react-select "src" "react-select.js")
-  (.appendChild (.-head js/document) react-select))
 
 
 #_(def PLOTLYENV "https://<domain>.plot.ly")
@@ -118,7 +114,7 @@
            "dblof | Database for Loss of Function Variants"])
         [:div {:style {:margin (if full-page-search? "10px 0 0 0" "30vh 0 0 10vw")}}
          [:div {}
-          #_(.createElement
+          (.createElement
             js/React
             js/Select
             (clj->js
@@ -192,7 +188,3 @@
     (.. js/document (getElementById "app"))
     nil
     hot-reload?))
-
-
-
-

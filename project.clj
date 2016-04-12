@@ -23,9 +23,10 @@
 (defproject macarthur-lab/dblof-ui "0.0.1"
   :dependencies
   [
-    [dmohs/react "0.2.12"]
-    [org.clojure/clojure "1.7.0"]
-    [org.clojure/clojurescript "1.7.228"]
+   [cljsjs/react-select "1.0.0-beta12-0"]
+   [dmohs/react "0.2.12"]
+   [org.clojure/clojure "1.7.0"]
+   [org.clojure/clojurescript "1.7.228"]
    ]
   :plugins [[lein-cljsbuild "1.1.2"] [lein-resource "15.10.2"]]
   :profiles {:dev {:plugins [[lein-figwheel "0.5.0" :exclusions [org.clojure/clojure]]]
@@ -37,7 +38,7 @@
                                       {:optimizations :none
                                        :source-map true
                                        :source-map-timestamp true}
-                                      :figwheel ~(merge {} figwheel-opts)}}}
+                                      :figwheel {:websocket-host :js-client-host}}}}
                    ;:figwheel ~figwheel-server-opts
                  }
              :figwheel {:cljsbuild
