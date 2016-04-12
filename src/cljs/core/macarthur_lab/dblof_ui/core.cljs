@@ -78,8 +78,15 @@
         [:div {:style {:flex "1 1 33%"}}
          "n-Homozygotes"
          [:div {} (:n_homozygotes props)]]]]
+      [:div {:ref "plot" :style {:width 600 :height 300}}]
       [:div {}
-       [:a {:href "#"} "< Back"]]])})
+       [:a {:href "#"} "< Back"]]])
+   :component-did-mount
+   (fn [{:keys [refs]}]
+     (.plot js/Plotly (@refs "plot")
+            (clj->js [{:x [1, 2, 3, 4, 5],
+                       :y [1, 2, 4, 8, 16]}])
+            (clj->js {:margin {:t 0}})))})
 
 (defn- search-db-handler[search-term cb]
   (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
