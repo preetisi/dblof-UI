@@ -6,15 +6,17 @@
     [macarthur-lab.dblof-ui.utils :as u])
   (:require-macros [devcards.core :refer [defcard]]))
 
-
-#_(def PLOTLYENV "https://<domain>.plot.ly")
 ;asynchronous function : takes a callback function as parameter and cals that callback function with search results
 ;cb -> callback function
 
 
 ;This function will parse the url and find the gene clicked
-(defn parse-url[current-url]
+(defn get-gene-name-from-window-hash[current-url]
+  (assert (string? current-url))
   (nth(clojure.string/split current-url #"/")1))
+
+
+(u/cljslog "parse-url" (clojure.string/split "http://dblof.broadinstitute.org:10080/arf5" #"/"))
 
 ;ajax call to display
 (defn- get-window-hash []
@@ -40,15 +42,28 @@
                            " where symbol = ?) as n_homozygotes,"
                            " (select sum(ac_adj / an_adj) from variant_annotation"
                            " where symbol = ?) as cumulative_af;")
-                    :params (repeat 3 (parse-url hash))})
+                    :params (repeat 3 (get-gene-name-from-window-hash hash))})
            :on-done (fn [{:keys [get-parsed-response]}]
                       (u/cljslog "get-parsed-response-->" (get (get-parsed-response) "rows"))
 
                       (let [gene-info (first (get (get-parsed-response) "rows"))]
-                        (cb gene-info))
-                      (u/cljslog (get (get-parsed-response) "rows"))
-                      #_(cb ((map #(get % "(n_lof/exp_lof)*100" ) (get (get-parsed-response) "rows")))))}))
+                        (cb gene-info)))}))
 
+
+(defn- exac-age-calculator []
+  (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
+           :method :post
+           :data (u/->json-string
+                   {:sql (str
+                           "select `count(*)` as `exac-age-frequency`,
+                            age_exac as `age-bins` from metadata_age
+                            where age_exac is not NULL")
+                    :params []})
+           :on-done (fn [{:keys [get-parsed-response]}]
+                      (u/cljslog "get-age-data-->" (get (get-parsed-response) "rows"))
+                      (let [exac-age-info (first (get (get-parsed-response) "rows"))]))}))
+
+(exac-age-calculator)
 
 ; component for navigation bar
 (react/defc NavBar
@@ -69,13 +84,13 @@
       [NavBar]
       [:div {}
        [:div {:style {:display "flex"}}
-        [:div {:style {:flex "1 1 33%"}}
+        [:div {:style {:flex "1 1 33%" :padding "30px" :textAlign "center"}}
          "Observed/Expected"
          [:div {} (:lof_ratio props)]]
-        [:div {:style {:flex "1 1 33%"}}
+        [:div {:style {:flex "1 1 33%":padding "30px" :textAlign "center" }}
          "Cumulative AF"
          [:div {} (:cumulative_af props)]]
-        [:div {:style {:flex "1 1 33%"}}
+        [:div {:style {:flex "1 1 33%" :padding "30px" :textAlign "center"}}
          "n-Homozygotes"
          [:div {} (:n_homozygotes props)]]]]
       [:div {:ref "plot" :style {:width 600 :height 300}}]
@@ -84,9 +99,15 @@
    :component-did-mount
    (fn [{:keys [refs]}]
      (.plot js/Plotly (@refs "plot")
-            (clj->js [{:x [1, 2, 3, 4, 5],
+            (clj->js [{:type "bar"
+                       :name "age distributin"
+                       :x [1, 2, 3, 4, 5],
                        :y [1, 2, 4, 8, 16]}])
-            (clj->js {:margin {:t 0}})))})
+            (clj->js {:margin {:t 10}})))})
+
+(defn transform-vector [m]
+  {:label (get m "gene")
+   :value (get m "gene")})
 
 (defn- search-db-handler[search-term cb]
   (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
@@ -97,7 +118,13 @@
                            " order by gene limit 20")
                     :params [(str "%" search-term "%")]})
            :on-done (fn [{:keys [get-parsed-response]}]
-                      (cb (map #(get % "gene") (get (get-parsed-response) "rows"))))}))
+                      #_(u/cljslog "parse-value-->" (get (get-parsed-response) "rows"))
+                        (u/cljslog (mapv transform-vector (get (get-parsed-response) "rows")))
+                       #_ (u/cljslog "transformed vector" (map transform-vector [str "rows"]))
+                        (cb (mapv transform-vector (get (get-parsed-response) "rows"))))}))
+
+
+
 
 ; Create a component class. A component implements a render method which returns one single child.
 ; That child may have an arbitrarily deep child structure
@@ -120,19 +147,27 @@
           [:div {:style {:margin "10vh 0 0 30vw" :fontWeight "bold" :fontSize "30px"}}
            "dblof | Database for Loss of Function Variants"])
         [:div {:style {:margin (if full-page-search? "10px 0 0 0" "30vh 0 0 10vw")}}
-         [:div {}
+         #_[:div {}
           (.createElement
             js/React
             js/Select
             (clj->js
               {:name "our-auto-box" :value "one"
-               :options [{:value "one" :label "One"} {:value "two" :label "Two"}]}))]
-         [:input {:type "text" :style {:width "70vw" :height "4em" :boxSizing "border-box"}
-                  :placeholder "Enter Gene"
-                  :ref "search-box"
-                  :onKeyDown (fn [e]
-                               (when (= 13 (.-keyCode e))
-                                 (react/call :perform-search this)))}]
+               :onChange #(react/call :perform-search this)}))]
+         [:div {}
+          (.createElement
+            js/React
+            js/Select
+            (clj->js
+              {:name "our-auto-box"
+               :placeholder "search"
+               :ref "search-box"
+               ;%n is
+               :loadOptions #(search-db-handler %1 %2)
+               ;:onChange (fn []
+                            ; (react/call :perform-search this) )
+                            }))
+          ]
          [:button {:style {:marginLeft 4 :height "4em"}
                    :onClick #(react/call :perform-search this)}
           "Search"]]
@@ -151,10 +186,12 @@
    :perform-search
    (fn [{:keys [state refs]}]
      (swap! state assoc :full-page-search? true)
-     (search-db-handler
+
+       (search-db-handler
        (.-value (@refs "search-box"))
        (fn [results] ;callback function which takes the results of (search-handler search-term)
-         (swap! state assoc :search-results results))))
+         (swap! state assoc :search-results results)))
+     )
 
     ;so there should be one more component-did-mount where you do the ajax call(using gene-details-handler function
     ; and swap the state of gene-details
