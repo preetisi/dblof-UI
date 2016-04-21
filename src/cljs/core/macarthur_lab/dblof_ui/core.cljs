@@ -1,10 +1,26 @@
 (ns macarthur-lab.dblof-ui.core
   (:require
-   cljsjs.react-select
+    cljsjs.react-select
+    clojure.string
     devcards.core
     [dmohs.react :as react]
     [macarthur-lab.dblof-ui.utils :as u])
   (:require-macros [devcards.core :refer [defcard]]))
+
+
+(def api-url-root "http://dblof.broadinstitute.org:30080")
+
+
+(defonce genes-atom (atom nil))
+(when-not @genes-atom
+  (u/ajax {:url (str api-url-root "/exec-sql")
+           :method :post
+           :data (u/->json-string {:sql "select gene from constraint_scores"})
+           :on-done (fn [{:keys [get-parsed-response]}]
+                      (reset! genes-atom
+                              (map clojure.string/lower-case
+                                   (map #(get % "gene") (get (get-parsed-response) "rows")))))}))
+
 
 ;asynchronous function : takes a callback function as parameter and cals that callback function with search results
 ;cb -> callback function
@@ -125,7 +141,48 @@
 
 
 
-
+(react/defc SearchResults
+  {:select-next-item
+   (fn [{:keys [this state after-update]}]
+     (swap! state assoc :selected-index (inc (or (:selected-index @state) -1))))
+   :select-prev-item
+   (fn [{:keys [this state after-update]}]
+     (swap! state assoc :selected-index (dec (:selected-index @state))))
+   :report-selection
+   (fn [{:keys [props state]}]
+     (let [{:keys [on-item-selected]} props
+           {:keys [results selected-index]} @state]
+       (when on-item-selected
+         (on-item-selected (nth results selected-index)))))
+   :render
+   (fn [{:keys [this props state]}]
+     (let [{:keys [style search-text]} props
+           {:keys [results selected-index]} @state]
+       [:div {:style (merge {:margin "4px 0 0 0"} (:container style))}
+        (map-indexed
+         (fn [i x]
+           [:div {:onMouseOver #(swap! state assoc :selected-index i)
+                  :onClick #(react/call :report-selection this)
+                  :style {:cursor "pointer"
+                          :backgroundColor (when (= i selected-index) "rgba(220,245,250,1)")
+                          :padding "0 6px"}}
+            (clojure.string/upper-case x)])
+         results)]))
+   :component-did-update
+   (fn [{:keys [this prev-props props state locals]}]
+     (js/clearTimeout (:timeout @locals))
+     (let [{:keys [search-text]} props]
+       (when-not (= (:search-text prev-props) search-text)
+         (if (clojure.string/blank? search-text)
+           (swap! state dissoc :results :selected-index)
+           (let [search-text (clojure.string/lower-case search-text)]
+             (swap! locals assoc :timeout
+                    (js/setTimeout
+                     (fn []
+                       (let [filtered (filter #(= 0 (.indexOf % search-text)) @genes-atom)
+                             results (take 20 (sort filtered))]
+                         (swap! state assoc :results results :selected-index 0)))
+                     100)))))))})
 ; Create a component class. A component implements a render method which returns one single child.
 ; That child may have an arbitrarily deep child structure
 (react/defc SearchBoxAndResults
@@ -135,53 +192,75 @@
    (fn [] {:hash (get-window-hash)})
    :render
   ;{:keys [this state]} is a map which contains :this :state :props :refs etc
-   (fn [{:keys [this state]}]
+   (fn [{:keys [this state refs]}]
      ;lof-ratio holds the state for obs/exp
-     (let [{:keys [full-page-search? hash lof-ratio cumulative-af n-homozygotes]} @state]
+     (let [{:keys [full-page-search? hash lof-ratio cumulative-af n-homozygotes search-text suggestion]} @state]
      ;;The <div> tags are not actual DOM nodes; they are instantiations of React div components.
-       (if lof-ratio
-         [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes}]
        [:div {}
-        [NavBar]
-        (when-not full-page-search?
-          [:div {:style {:margin "10vh 0 0 30vw" :fontWeight "bold" :fontSize "30px"}}
-           "dblof | Database for Loss of Function Variants"])
-        [:div {:style {:margin (if full-page-search? "10px 0 0 0" "30vh 0 0 10vw")}}
+        (when lof-ratio
+          [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes}])
+        [:div {:style {:display (when lof-ratio "none")}}
+         [NavBar]
+         (when-not full-page-search?
+           [:div {:style {:margin "10vh 0 0 30vw" :fontWeight "bold" :fontSize "30px"}}
+            "dblof | Database for Loss of Function Variants"])
+         [:div {:style {:margin (if full-page-search? "10px 0 0 0" "10px 0 0 0")
+                        :textAlign "center"}}
+          [:input {:ref "search-box"
+                   :value (str search-text (subs (or suggestion "") (count search-text)))
+                   :onChange #(swap! state assoc :suggestion nil :search-text (.. % -target -value))
+                   :onKeyDown (fn [e]
+                                (when (= 13 (.-keyCode e))
+                                  (react/call :report-selection (@refs "results")))
+                                (when (= 38 (.-keyCode e))
+                                  (.preventDefault e)
+                                  (react/call :select-prev-item (@refs "results")))
+                                (when (= 40 (.-keyCode e))
+                                  (.preventDefault e)
+                                  (react/call :select-next-item (@refs "results"))))
+                   :style {:fontSize "medium" :width 200}}]
+          [:br]
+          [SearchResults {:ref "results"
+                          :search-text search-text
+                          :on-item-selected (fn [item]
+                                              (aset js/window "location" "hash"
+                                                    (str "genes/" item)))
+                          :style {:container {:width 210 :display "inline-block" :textAlign "left"}}}]
+          #_[:div {}
+             (.createElement
+              js/React
+              js/Select
+              (clj->js
+               {:name "our-auto-box" :value "one"
+                :onChange #(react/call :perform-search this)}))]
+          #_[:div {}
+             (.createElement
+              js/React
+              js/Select
+              (clj->js
+               {:name "our-auto-box"
+                :placeholder "search"
+                :ref "search-box"
+                ;%n is
+                :loadOptions #(search-db-handler %1 %2)
+                ;:onChange (fn []
+                ; (react/call :perform-search this) )
+                }))
+             ]
+          #_[:button {:style {:marginLeft 4 :height "4em"}
+                      :onClick #(react/call :perform-search this)}
+             "Search"]]
+         #_[:div {:style {:marginBottom "1em"}}]
          #_[:div {}
-          (.createElement
-            js/React
-            js/Select
-            (clj->js
-              {:name "our-auto-box" :value "one"
-               :onChange #(react/call :perform-search this)}))]
-         [:div {}
-          (.createElement
-            js/React
-            js/Select
-            (clj->js
-              {:name "our-auto-box"
-               :placeholder "search"
-               :ref "search-box"
-               ;%n is
-               :loadOptions #(search-db-handler %1 %2)
-               ;:onChange (fn []
-                            ; (react/call :perform-search this) )
-                            }))
-          ]
-         [:button {:style {:marginLeft 4 :height "4em"}
-                   :onClick #(react/call :perform-search this)}
-          "Search"]]
-        [:div {:style {:marginBottom "1em"}}]
-        [:div {}
-         "Results: "
-         [:br]
-         ;interpose Returns a lazy seq of the elements of coll separated by sep (here it is br)
-         ;@form ⇒ (deref form)
-         (interpose [:br] (map (fn [s] [:a {:style {:padding 5 :display "inline-block"}
-                                            :href (str "#genes/" s)}
-                                        s])
-                            (:search-results @state)))]
-        ])))
+            "Results: "
+            [:br]
+            ;interpose Returns a lazy seq of the elements of coll separated by sep (here it is br)
+            ;@form ⇒ (deref form)
+            (interpose [:br] (map (fn [s] [:a {:style {:padding 5 :display "inline-block"}
+                                               :href (str "#genes/" s)}
+                                           s])
+                                  (:search-results @state)))]
+         ]]))
 
    :perform-search
    (fn [{:keys [state refs]}]
@@ -215,8 +294,6 @@
                                       (swap! state dissoc :cumulative-af)
                                       (swap! state dissoc :n-homozygotes)))]
        (swap! locals assoc :hash-change-listener hash-change-listener )
-      ;.. makes it window.location.hash
-       (js/console.log(get-window-hash))
       (.addEventListener js/window "hashchange" hash-change-listener)))
    ;remove the event listener
    :component-will-unmount
