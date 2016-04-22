@@ -60,26 +60,13 @@
                            " where symbol = ?) as cumulative_af;")
                     :params (repeat 3 (get-gene-name-from-window-hash hash))})
            :on-done (fn [{:keys [get-parsed-response]}]
-                      (u/cljslog "get-parsed-response-->" (get (get-parsed-response) "rows"))
+                      #_(u/cljslog "get-parsed-response-->" (get (get-parsed-response) "rows"))
 
                       (let [gene-info (first (get (get-parsed-response) "rows"))]
                         (cb gene-info)))}))
 
 
-(defn- exac-age-calculator []
-  (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
-           :method :post
-           :data (u/->json-string
-                   {:sql (str
-                           "select `count(*)` as `exac-age-frequency`,
-                            age_exac as `age-bins` from metadata_age
-                            where age_exac is not NULL")
-                    :params []})
-           :on-done (fn [{:keys [get-parsed-response]}]
-                      (u/cljslog "get-age-data-->" (get (get-parsed-response) "rows"))
-                      (let [exac-age-info (first (get (get-parsed-response) "rows"))]))}))
 
-(exac-age-calculator)
 
 ; component for navigation bar
 (react/defc NavBar
@@ -117,11 +104,11 @@
      (.plot js/Plotly (@refs "plot")
             (clj->js [{:type "bar"
                        :name "age distributin"
-                       :x [1, 2, 3, 4, 5],
-                       :y [1, 2, 4, 8, 16]}])
+                       :x ["10-15", "1-"],
+                       :y [1, 2]}])
             (clj->js {:margin {:t 10}})))})
 
-(defn transform-vector [m]
+(defn transform-vector-to-gene-label-map [m]
   {:label (get m "gene")
    :value (get m "gene")})
 
@@ -135,11 +122,27 @@
                     :params [(str "%" search-term "%")]})
            :on-done (fn [{:keys [get-parsed-response]}]
                       #_(u/cljslog "parse-value-->" (get (get-parsed-response) "rows"))
-                        (u/cljslog (mapv transform-vector (get (get-parsed-response) "rows")))
-                       #_ (u/cljslog "transformed vector" (map transform-vector [str "rows"]))
-                        (cb (mapv transform-vector (get (get-parsed-response) "rows"))))}))
+                        (u/cljslog (mapv transform-vector-to-gene-label-map (get (get-parsed-response) "rows")))
+                       #_ (u/cljslog "transformed vector" (map transform-vector-to-gene-label-map [str "rows"]))
+                        (cb (mapv transform-vector-to-gene-label-map (get (get-parsed-response) "rows"))))}))
 
+(defn get-age-vectors [m]
+  [])
 
+(defn- exac-age-calculator []
+  (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
+           :method :post
+           :data (u/->json-string
+                   {:sql (str
+                           "select `count(*)` as `exac-age-frequency`,
+                            age_exac as `age-bins` from metadata_age
+                            where age_exac is not NULL")
+                    :params []})
+           :on-done (fn [{:keys [get-parsed-response]}]
+                      (u/cljslog "get-age-data-->" (mapv get-age-vectors (get (get-parsed-response) "rows")))
+                      (let [exac-age-info (first (get (get-parsed-response) "rows"))]))}))
+
+(exac-age-calculator)
 
 (react/defc SearchResults
   {:select-next-item
@@ -183,6 +186,7 @@
                              results (take 20 (sort filtered))]
                          (swap! state assoc :results results :selected-index 0)))
                      100)))))))})
+
 ; Create a component class. A component implements a render method which returns one single child.
 ; That child may have an arbitrarily deep child structure
 (react/defc SearchBoxAndResults
@@ -226,41 +230,8 @@
                                               (aset js/window "location" "hash"
                                                     (str "genes/" item)))
                           :style {:container {:width 210 :display "inline-block" :textAlign "left"}}}]
-          #_[:div {}
-             (.createElement
-              js/React
-              js/Select
-              (clj->js
-               {:name "our-auto-box" :value "one"
-                :onChange #(react/call :perform-search this)}))]
-          #_[:div {}
-             (.createElement
-              js/React
-              js/Select
-              (clj->js
-               {:name "our-auto-box"
-                :placeholder "search"
-                :ref "search-box"
-                ;%n is
-                :loadOptions #(search-db-handler %1 %2)
-                ;:onChange (fn []
-                ; (react/call :perform-search this) )
-                }))
-             ]
-          #_[:button {:style {:marginLeft 4 :height "4em"}
-                      :onClick #(react/call :perform-search this)}
-             "Search"]]
-         #_[:div {:style {:marginBottom "1em"}}]
-         #_[:div {}
-            "Results: "
-            [:br]
-            ;interpose Returns a lazy seq of the elements of coll separated by sep (here it is br)
-            ;@form ⇒ (deref form)
-            (interpose [:br] (map (fn [s] [:a {:style {:padding 5 :display "inline-block"}
-                                               :href (str "#genes/" s)}
-                                           s])
-                                  (:search-results @state)))]
-         ]]))
+
+         ]]]))
 
    :perform-search
    (fn [{:keys [state refs]}]
