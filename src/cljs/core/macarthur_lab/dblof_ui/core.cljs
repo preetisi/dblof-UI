@@ -22,30 +22,19 @@
                                    (map #(get % "gene") (get (get-parsed-response) "rows")))))}))
 
 
-;asynchronous function : takes a callback function as parameter and cals that callback function with search results
-;cb -> callback function
-
 
 ;This function will parse the url and find the gene clicked
 (defn get-gene-name-from-window-hash[current-url]
   (assert (string? current-url))
   (nth(clojure.string/split current-url #"/")1))
 
-
-(u/cljslog "parse-url" (clojure.string/split "http://dblof.broadinstitute.org:10080/arf5" #"/"))
-
 ;ajax call to display
 (defn- get-window-hash []
   (let [value (.. js/window -location -hash)]
     (when-not (clojure.string/blank? value) value)))
 
-;select cs.n_lof/cs.exp_log as a, sum(va.ac_adj/ac.an_adj) as b
-;from constraint_scores cs inner join variant_annotation va on cs.gene = va.symbol where cs.gene = ?
-;get the cumulative AF -> sum(ac_adj/an_adj) where LoF='HC'
-
-; this function will take the clicked gene as input and query the constraint_score sql for displaying
-; obs/exp --> n_lof/exp_lof
-;get the number of homozygotes -> sum(ac_hom) where LoF='HC'
+;asynchronous function : takes a callback function as parameter and cals that callback function with search results
+;cb -> callback function
 (defn- score_calculator[hash cb]
   (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
            :method :post
@@ -60,13 +49,8 @@
                            " where symbol = ?) as cumulative_af;")
                     :params (repeat 3 (get-gene-name-from-window-hash hash))})
            :on-done (fn [{:keys [get-parsed-response]}]
-                      #_(u/cljslog "get-parsed-response-->" (get (get-parsed-response) "rows"))
-
                       (let [gene-info (first (get (get-parsed-response) "rows"))]
                         (cb gene-info)))}))
-
-
-
 
 ; component for navigation bar
 (react/defc NavBar
@@ -78,11 +62,31 @@
                       :padding "10" :width "100%" :fontSize "30px" :color "#ffffff"}} "dbLoF"]
        ])
     })
-; New component for displaying the gene details
+
+(defn- exac-age-calculator [cb]
+  (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
+           :method :post
+           :data (u/->json-string
+                   {:sql (str
+                           "select `count(*)` as `exac-age-frequency`,
+                            age_exac as `age-bins` from metadata_age
+                            where age_exac is not NULL")
+                    :params []})
+           :on-done (fn [{:keys [get-parsed-response]}]
+                        (cb (reduce
+                              (fn [r m]
+                                (-> r
+                                  (update-in [:exac-age-info] conj (get m "exac-age-frequency"))
+                                  (update-in [:age-bins] conj (get m "age-bins"))))
+                              {:exac-age-info [] :age-bins []}
+                              (get (get-parsed-response) "rows"))))}))
+
+
+;New component for displaying the gene details
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
   {:render
-   (fn [{:keys [this props]}]
+   (fn [{:keys [this props state ]}] ;;exac-age-info age-bins
      [:div {}
       [NavBar]
       [:div {}
@@ -96,17 +100,29 @@
         [:div {:style {:flex "1 1 33%" :padding "30px" :textAlign "center"}}
          "n-Homozygotes"
          [:div {} (:n_homozygotes props)]]]]
-      [:div {:ref "plot" :style {:width 600 :height 300}}]
+       [:div {:ref "plot" :style {:width 600 :height 300}}]
       [:div {}
        [:a {:href "#"} "< Back"]]])
-   :component-did-mount
-   (fn [{:keys [refs]}]
+
+   :run-age-calculator
+   (fn [{:keys [this state refs]} results]
+     (swap! state assoc :age-bins (get results :age-bins))
+     (swap! state assoc :exac-age-info (get results :exac-age-info))
+     (react/call :build-plot this (get results :age-bins) (get results :exac-age-info)))
+   :build-plot
+   (fn [{:keys [this refs state]} x y]
      (.plot js/Plotly (@refs "plot")
-            (clj->js [{:type "bar"
-                       :name "age distributin"
-                       :x ["10-15", "1-"],
-                       :y [1, 2]}])
-            (clj->js {:margin {:t 10}})))})
+       (clj->js [{:type "bar"
+                  :name "age distributin"
+                  :x x
+                  :y y}])
+       (clj->js {:margin {:t 10}})))
+
+   :component-did-mount
+   (fn [{:keys [this state refs]}]
+     (exac-age-calculator (fn [results]
+                               (react/call :run-age-calculator this results))))
+   })
 
 (defn transform-vector-to-gene-label-map [m]
   {:label (get m "gene")
@@ -121,29 +137,10 @@
                            " order by gene limit 20")
                     :params [(str "%" search-term "%")]})
            :on-done (fn [{:keys [get-parsed-response]}]
-                      #_(u/cljslog "parse-value-->" (get (get-parsed-response) "rows"))
-                        (u/cljslog (mapv transform-vector-to-gene-label-map (get (get-parsed-response) "rows")))
-                       #_ (u/cljslog "transformed vector" (map transform-vector-to-gene-label-map [str "rows"]))
                         (cb (mapv transform-vector-to-gene-label-map (get (get-parsed-response) "rows"))))}))
 
-(defn get-age-vectors [m]
-  [])
 
-(defn- exac-age-calculator []
-  (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
-           :method :post
-           :data (u/->json-string
-                   {:sql (str
-                           "select `count(*)` as `exac-age-frequency`,
-                            age_exac as `age-bins` from metadata_age
-                            where age_exac is not NULL")
-                    :params []})
-           :on-done (fn [{:keys [get-parsed-response]}]
-                      (u/cljslog "get-age-data-->" (mapv get-age-vectors (get (get-parsed-response) "rows")))
-                      (let [exac-age-info (first (get (get-parsed-response) "rows"))]))}))
-
-(exac-age-calculator)
-
+;component for displaying auto-select list of genes
 (react/defc SearchResults
   {:select-next-item
    (fn [{:keys [this state after-update]}]
@@ -157,6 +154,9 @@
            {:keys [results selected-index]} @state]
        (when on-item-selected
          (on-item-selected (nth results selected-index)))))
+   ;:exac-wide-age-info
+   #_(fn [{:keys [props state]}]
+     (let []))
    :render
    (fn [{:keys [this props state]}]
      (let [{:keys [style search-text]} props
@@ -185,7 +185,9 @@
                        (let [filtered (filter #(= 0 (.indexOf % search-text)) @genes-atom)
                              results (take 20 (sort filtered))]
                          (swap! state assoc :results results :selected-index 0)))
-                     100)))))))})
+                     100)))))))
+
+   })
 
 ; Create a component class. A component implements a render method which returns one single child.
 ; That child may have an arbitrarily deep child structure
@@ -198,7 +200,7 @@
   ;{:keys [this state]} is a map which contains :this :state :props :refs etc
    (fn [{:keys [this state refs]}]
      ;lof-ratio holds the state for obs/exp
-     (let [{:keys [full-page-search? hash lof-ratio cumulative-af n-homozygotes search-text suggestion]} @state]
+     (let [{:keys [full-page-search? hash lof-ratio cumulative-af n-homozygotes search-text suggestion exac-age-info age-bins]} @state]
      ;;The <div> tags are not actual DOM nodes; they are instantiations of React div components.
        [:div {}
         (when lof-ratio
@@ -236,7 +238,6 @@
    :perform-search
    (fn [{:keys [state refs]}]
      (swap! state assoc :full-page-search? true)
-
        (search-db-handler
        (.-value (@refs "search-box"))
        (fn [results] ;callback function which takes the results of (search-handler search-term)
