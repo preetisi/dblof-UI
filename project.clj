@@ -62,4 +62,4 @@
                                 :compiler {:output-dir "resources/public/build"
                                            :asset-path "build"
                                            :output-to "resources/public/compiled.js"}}}}
-  :resource {:resource-paths ["src/static" "lib/plotly" "lib/react-select"] :skip-stencil [#".*"]})
+  :resource {:resource-paths ["src/static" "lib/plotly"] :skip-stencil [#".*"]})
