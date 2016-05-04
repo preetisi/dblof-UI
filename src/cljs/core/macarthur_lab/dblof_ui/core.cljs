@@ -25,6 +25,8 @@
 
 ;This function will parse the url and find the gene clicked
 (defn get-gene-name-from-window-hash[current-url]
+  (u/cljslog "current-url" current-url)
+  (u/cljslog "get-gene-name-from-window-hash-->"(nth(clojure.string/split current-url #"/")1))
   (assert (string? current-url))
   (nth(clojure.string/split current-url #"/")1))
 
@@ -52,6 +54,56 @@
                       (let [gene-info (first (get (get-parsed-response) "rows"))]
                         (cb gene-info)))}))
 
+(defn exac-each-gene-pop-calculator [window-hash cb]
+  (u/ajax {:url (str api-url-root "/exec-sql")
+           :method :post
+           :data (u/->json-string
+                  {:sql (str
+                         "select pop as 'each-gene-population',"
+                         "pop_frequency as 'each-gene-population-frequency'"
+                         "from exac_pop_gene_summary where gene = ? and pop is not NULL")
+                   :params (clojure.string/upper-case (get-gene-name-from-window-hash window-hash))})
+           :on-done (fn [{:keys [get-parsed-response]}]
+                      (cb (reduce (fn [r, m]
+                                    (-> r
+                                        (update-in [:exac_each_gene_pop_frequency] conj (get m "each-gene-population-frequency"))
+                                        (update-in [:exac_each_gene_population_category] conj (get m "each-gene-population"))))
+                                  {:exac_each_gene_pop_frequency [] :exac_each_gene_population_category []}
+                                  (get (get-parsed-response) "rows"))))}))
+
+(defn- exac-each-gene-age-calculator [window-hash cb]
+  (u/ajax {:url (str api-url-root "/exec-sql")
+           :method :post
+           :data (u/->json-string
+                  {:sql (str
+                         "select b as 'each-age-bins', `count(*)` as 'exac-each-gene-age-frequency'"
+                         "from exac_age_gene_summary where gene = ?")
+                   :params (clojure.string/upper-case (get-gene-name-from-window-hash window-hash))})
+           :on-done (fn [{:keys [get-parsed-response]}]
+                      (cb (reduce (fn [r, m]
+                                    (-> r
+                                        (update-in [:exac-each-gene-frequency] conj (get m "exac-each-gene-age-frequency"))
+                                        (update-in [:exac-each-gene-age-bins] conj (get m "each-age-bins"))))
+                                  {:exac-each-gene-frequency [] :exac-each-gene-age-bins []}
+                                  (get (get-parsed-response) "rows"))))}))
+
+(defn- exac-age-calculator [cb]
+  (u/ajax {:url (str api-url-root "/exec-sql")
+           :method :post
+           :data (u/->json-string
+                  {:sql (str
+                         "select `count(*)` as `exac-age-frequency`,
+                            age_exac as `age-bins` from metadata_age
+                            where age_exac is not NULL")
+                   :params []})
+           :on-done (fn [{:keys [get-parsed-response]}]
+                      (cb (reduce
+                           (fn [r m]
+                             (-> r
+                                 (update-in [:exac-age-info] conj (get m "exac-age-frequency"))
+                                 (update-in [:age-bins] conj (get m "age-bins"))))
+                           {:exac-age-info [] :age-bins []}
+                           (get (get-parsed-response) "rows"))))}))
 ; component for navigation bar
 (react/defc NavBar
   {
@@ -62,24 +114,6 @@
                       :padding "10" :width "100%" :fontSize "30px" :color "#ffffff"}} "dbLoF"]
        ])
     })
-
-(defn- exac-age-calculator [cb]
-  (u/ajax {:url (str api-url-root "/exec-sql")
-           :method :post
-           :data (u/->json-string
-                   {:sql (str
-                           "select `count(*)` as `exac-age-frequency`,
-                            age_exac as `age-bins` from metadata_age
-                            where age_exac is not NULL")
-                    :params []})
-           :on-done (fn [{:keys [get-parsed-response]}]
-                        (cb (reduce
-                              (fn [r m]
-                                (-> r
-                                  (update-in [:exac-age-info] conj (get m "exac-age-frequency"))
-                                  (update-in [:age-bins] conj (get m "age-bins"))))
-                              {:exac-age-info [] :age-bins []}
-                              (get (get-parsed-response) "rows"))))}))
 
 
 ;New component for displaying the gene details
@@ -101,6 +135,8 @@
          "n-Homozygotes"
          [:div {} (:n_homozygotes props)]]]]
        [:div {:ref "plot" :style {:width 600 :height 300}}]
+      [:div {:ref "plot2" :style {:width 600 :height 300}}]
+      [:div {:ref "plot3" :style {:width 600 :height 300}}]
       [:div {}
        [:h2 {} "Variants"]
        (map (fn [x] [:div {} (get x "variant_id")]) (:variants @state))]
@@ -112,6 +148,19 @@
      (swap! state assoc :age-bins (get results :age-bins))
      (swap! state assoc :exac-age-info (get results :exac-age-info))
      (react/call :build-plot this (get results :age-bins) (get results :exac-age-info)))
+
+   :run-each-gene-age-calculator
+   (fn [{:keys [this state refs]} results]
+     (swap! state assoc :exac-each-gene-age-bins (get results "exac-each-gene-age-bins"))
+     (swap! state assoc :exac-each-gene-frequency (get results "exac-each-gene-frequency"))
+     (react/call :build-each-gene-age-plot this (get results :exac-each-gene-age-bins) (get results :exac-each-gene-frequency)))
+
+   :run-each-gene-pop-calculator
+   (fn [{:keys [this state refs]} results]
+     (swap! state assoc :exac_each_gene_population_category (get results "exac_each_gene_population_category"))
+     (swap! state assoc :exac_each_gene_pop_frequency (get results "exac_each_gene_pop_frequency"))
+     (react/call :build-each-gene-pop-plot this (get results :exac_each_gene_population_category) (get results :exac_each_gene_pop_frequency)))
+
    :build-plot
    (fn [{:keys [this refs state]} x y]
      (.plot js/Plotly (@refs "plot")
@@ -121,10 +170,31 @@
                   :y y}])
        (clj->js {:margin {:t 10}})))
 
+   :build-each-gene-age-plot
+   (fn [{:keys [this refs state]} x y]
+     (.plot js/Plotly (@refs "plot2")
+            (clj->js [{:type "bar"
+                       :name "age distributin"
+                       :x x
+                       :y y}])
+            (clj->js {:margin {:t 10}})))
+   :build-each-gene-pop-plot
+   (fn [{:keys [this refs state]} x y]
+     (.plot js/Plotly (@refs "plot3")
+            (clj->js [{:type "bar"
+                       :name "age distributin"
+                       :x x
+                       :y y}])
+            (clj->js {:margin {:t 10}})))
+
    :component-did-mount
-   (fn [{:keys [this state refs]}]
+   (fn [{:keys [this props state refs]}]
      (exac-age-calculator (fn [results]
                                (react/call :run-age-calculator this results)))
+                               (exac-each-gene-age-calculator (:hash props) (fn [results]
+                                                                (react/call :run-each-gene-age-calculator this results )))
+                               (exac-each-gene-pop-calculator (:hash props) (fn [results]
+                                                                     (react/call :run-each-gene-pop-calculator this results)))
      (react/call :load-variants this))
    :load-variants
    (fn [{:keys [props state]}]
@@ -181,8 +251,6 @@
        (when on-item-selected
          (on-item-selected (nth results selected-index)))))
    ;:exac-wide-age-info
-   #_(fn [{:keys [props state]}]
-     (let []))
    :render
    (fn [{:keys [this props state]}]
      (let [{:keys [style search-text]} props
@@ -221,7 +289,9 @@
   ;;render which returns a tree of React components that will eventually render to HTML.
   {
     :get-initial-state
-   (fn [] {:hash (get-window-hash)})
+   ;returns str or nil if empty
+   (fn [] (u/cljslog "{:hash (get-window-hash)}" {:hash (get-window-hash)}))
+
    :render
   ;{:keys [this state]} is a map which contains :this :state :props :refs etc
    (fn [{:keys [this state refs]}]
@@ -230,12 +300,12 @@
      ;;The <div> tags are not actual DOM nodes; they are instantiations of React div components.
        [:div {}
         (when lof-ratio
-          [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes}])
+          [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes :hash hash}])
         [:div {:style {:display (when lof-ratio "none")}}
          [NavBar]
          (when-not full-page-search?
            [:div {:style {:margin "10vh 0 0 30vw" :fontWeight "bold" :fontSize "30px"}}
-            "dblof | Database for Loss of Function Variants"])
+            "dbLoF | Database for Loss of Function Variants"])
          [:div {:style {:margin (if full-page-search? "10px 0 0 0" "10px 0 0 0")
                         :textAlign "center"}}
           [:input {:ref "search-box"
@@ -283,7 +353,8 @@
                                           hash
                                           (fn [scores]
                                             (u/cljslog "scores:" scores)
-                                            (swap! state assoc :lof-ratio (get scores "lof_ratio")
+                                            (swap! state assoc :hash hash
+                                                   :lof-ratio (get scores "lof_ratio")
                                                                :cumulative-af (get scores "cumulative_af")
                                                                :n-homozygotes (get scores "n_homozygotes"))
                                             (u/cljslog @state)
