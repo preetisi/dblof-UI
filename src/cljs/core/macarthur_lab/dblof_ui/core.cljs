@@ -8,7 +8,7 @@
   (:require-macros [devcards.core :refer [defcard]]))
 
 
-(def api-url-root "http://dblof.broadinstitute.org:30080")
+(def api-url-root "http://api.staging.dblof.broadinstitute.org")
 
 
 (defonce genes-atom (atom nil))
@@ -36,7 +36,7 @@
 ;asynchronous function : takes a callback function as parameter and cals that callback function with search results
 ;cb -> callback function
 (defn- score_calculator[hash cb]
-  (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
+  (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
                    {:sql (str
@@ -64,7 +64,7 @@
     })
 
 (defn- exac-age-calculator [cb]
-  (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
+  (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
                    {:sql (str
@@ -102,6 +102,9 @@
          [:div {} (:n_homozygotes props)]]]]
        [:div {:ref "plot" :style {:width 600 :height 300}}]
       [:div {}
+       [:h2 {} "Variants"]
+       (map (fn [x] [:div {} (get x "variant_id")]) (:variants @state))]
+      [:div {}
        [:a {:href "#"} "< Back"]]])
 
    :run-age-calculator
@@ -121,15 +124,38 @@
    :component-did-mount
    (fn [{:keys [this state refs]}]
      (exac-age-calculator (fn [results]
-                               (react/call :run-age-calculator this results))))
-   })
+                               (react/call :run-age-calculator this results)))
+     (react/call :load-variants this))
+   :load-variants
+   (fn [{:keys [props state]}]
+     (let [gene-name (get-gene-name-from-window-hash (get-window-hash))
+           gene-name-uc (clojure.string/upper-case gene-name)]
+       (u/ajax {:url (str api-url-root "/exec-mongo")
+                :method :post
+                :data (u/->json-string
+                       {:collection-name "genes"
+                        :query {:gene_name_upper {:$eq gene-name-uc}}})
+                :on-done
+                (fn [{:keys [get-parsed-response]}]
+                  (let [gene-id (get-in (get-parsed-response) [0 "gene_id"])]
+                    (u/ajax {:url (str api-url-root "/exec-mongo")
+                             :method :post
+                             :data (u/->json-string
+                                    {:collection-name "variants"
+                                     :query {:genes {:$in [gene-id]}}
+                                     :projections {:variant_id 1}
+                                     :options {:limit 100}})
+                             :on-done
+                             (fn [{:keys [get-parsed-response]}]
+                               (swap! state assoc :variants (get-parsed-response)))})))})))})
+
 
 (defn transform-vector-to-gene-label-map [m]
   {:label (get m "gene")
    :value (get m "gene")})
 
 (defn- search-db-handler[search-term cb]
-  (u/ajax {:url "http://dblof.broadinstitute.org:30080/exec-sql"
+  (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
                    {:sql (str

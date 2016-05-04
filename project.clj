@@ -1,25 +1,3 @@
-(defn- inside-container? []
-  (.exists (clojure.java.io/file "/.dockerenv")))
-
-
-(def figwheel-opts
-  (when (inside-container?)
-    (let [specified-host (if-let [x (System/getenv "FIGWHEEL_HOST")]
-                           (if (clojure.string/blank? (clojure.string/trim x)) nil x))
-          host (or specified-host "192.168.99.100")]
-      (when (nil? specified-host)
-        (println (str "***\n"
-                      "*** You did not specify a FIGWHEEL_HOST environment variable.\n"
-                      "*** Using the default: " host "\n"
-                      "***")))
-      {:websocket-url (str "ws://" host "/figwheel-ws")})))
-
-
-(def figwheel-server-opts
-  (when (inside-container?)
-    {:hawk-options {:watcher :polling}}))
-
-
 (defproject macarthur-lab/dblof-ui "0.0.1"
   :dependencies
   [
@@ -38,18 +16,11 @@
                                       {:optimizations :none
                                        :source-map true
                                        :source-map-timestamp true}
-                                      :figwheel {:websocket-host :js-client-host}}}}
-                   ;:figwheel ~figwheel-server-opts
-                 }
+                                      :figwheel {:websocket-host :js-client-host}}}}}
              :figwheel {:cljsbuild
                         {:builds
                          {:client {:source-paths ["src/cljs/figwheel"]
                                    :compiler {:main "macarthur-lab.dblof-ui.main"}}}}}
-             :devcards {:cljsbuild
-                        {:builds {:client {:source-paths ["src/cljs/devcards"]
-                                           :compiler {:main "macarthur-lab.dblof-ui.devcards"}
-                                           :figwheel ~(merge figwheel-opts
-                                                             {:devcards true})}}}}
              :deploy {:cljsbuild
                       {:builds {:client {:source-paths ["src/cljs/deploy"]
                                          :compiler
