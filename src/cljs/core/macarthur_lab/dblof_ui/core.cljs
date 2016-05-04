@@ -143,7 +143,7 @@
                              :data (u/->json-string
                                     {:collection-name "variants"
                                      :query {:genes {:$in [gene-id]}}
-                                     :projections {:variant_id 1}
+                                     :projection {:variant_id 1}
                                      :options {:limit 100}})
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
