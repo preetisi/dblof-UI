@@ -55,7 +55,7 @@
                         (cb gene-info)))}))
 
 (defn exac-each-gene-pop-calculator [window-hash cb]
-  (u/ajax {:url (str "http://dblof.broadinstitute.org:30080/exec-sql")
+  (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
                   {:sql (str
@@ -72,7 +72,7 @@
                                   (get (get-parsed-response) "rows"))))}))
 
 (defn- exac-each-gene-age-calculator [window-hash cb]
-  (u/ajax {:url (str "http://dblof.broadinstitute.org:30080/exec-sql")
+  (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
                   {:sql (str
