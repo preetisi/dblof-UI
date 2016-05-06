@@ -8,7 +8,7 @@
   (:require-macros [devcards.core :refer [defcard]]))
 
 
-(def api-url-root "http://api.staging.dblof.broadinstitute.org")
+(def api-url-root "http://api.dblof.broadinstitute.org")
 
 
 (defonce genes-atom (atom nil))
