@@ -55,7 +55,7 @@
                         (cb gene-info)))}))
 
 (defn exac-each-gene-pop-calculator [window-hash cb]
-  (u/ajax {:url (str api-url-root "/exec-sql")
+  (u/ajax {:url (str "http://dblof.broadinstitute.org:30080/exec-sql")
            :method :post
            :data (u/->json-string
                   {:sql (str
@@ -72,7 +72,7 @@
                                   (get (get-parsed-response) "rows"))))}))
 
 (defn- exac-each-gene-age-calculator [window-hash cb]
-  (u/ajax {:url (str api-url-root "/exec-sql")
+  (u/ajax {:url (str "http://dblof.broadinstitute.org:30080/exec-sql")
            :method :post
            :data (u/->json-string
                   {:sql (str
@@ -204,7 +204,8 @@
                 :method :post
                 :data (u/->json-string
                        {:collection-name "genes"
-                        :query {:gene_name_upper {:$eq gene-name-uc}}})
+                        :query {:gene_name_upper {:$eq gene-name-uc}}
+                        :projection {:gene_id 1}})
                 :on-done
                 (fn [{:keys [get-parsed-response]}]
                   (let [gene-id (get-in (get-parsed-response) [0 "gene_id"])]
@@ -214,7 +215,7 @@
                                     {:collection-name "variants"
                                      :query {:genes {:$in [gene-id]}}
                                      :projection {:variant_id 1}
-                                     :options {:limit 100}})
+                                     :options {:limit 10000}})
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
                                (swap! state assoc :variants (get-parsed-response)))})))})))})
