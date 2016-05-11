@@ -163,18 +163,21 @@
 
    :build-plot
    (fn [{:keys [this refs state]} x y]
+     #_(.style (.select (.-d3 js/Plotly) "body") "background-color" "")
+     (-> js/Plotly .-d3 (.select "body") (.style "background-color" ""))
      (.plot js/Plotly (@refs "plot")
        (clj->js [{:type "bar"
                   :name "age distributin"
                   :x x
-                  :y y}])
+                  :y y
+                  }])
        (clj->js {:margin {:t 10}})))
 
    :build-each-gene-age-plot
    (fn [{:keys [this refs state]} x y]
      (.plot js/Plotly (@refs "plot2")
             (clj->js [{:type "bar"
-                       :name "age distributin"
+                       :title "age distribution"
                        :x x
                        :y y}])
             (clj->js {:margin {:t 10}})))
@@ -183,8 +186,9 @@
      (.plot js/Plotly (@refs "plot3")
             (clj->js [{:type "bar"
                        :name "age distributin"
-                       :x x
-                       :y y}])
+                       :x y
+                       :y x
+                       :orientation "h"}])
             (clj->js {:margin {:t 10}})))
 
    :component-did-mount
