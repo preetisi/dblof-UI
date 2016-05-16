@@ -1,12 +1,11 @@
 (defproject macarthur-lab/dblof-ui "0.0.1"
   :dependencies
   [
-   [cljsjs/react-select "1.0.0-beta12-0"]
-   [dmohs/react "0.2.12"]
-   [org.clojure/clojure "1.7.0"]
-   [org.clojure/clojurescript "1.7.228"]
+   [dmohs/react "1.0.2+15.0.2"]
+   [org.clojure/clojure "1.8.0"]
+   [org.clojure/clojurescript "1.8.51"]
    ]
-  :plugins [[lein-cljsbuild "1.1.2"] [lein-resource "15.10.2"]]
+  :plugins [[lein-cljsbuild "1.1.3"] [lein-resource "15.10.2"]]
   :profiles {:dev {:plugins [[lein-figwheel "0.5.0" :exclusions [org.clojure/clojure]]]
                    :dependencies [[binaryage/devtools "0.5.2"]
                                   [devcards "0.2.1" :exclusions [cljsjs/react]]]

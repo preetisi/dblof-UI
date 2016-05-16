@@ -1,14 +1,13 @@
 (ns macarthur-lab.dblof-ui.core
   (:require
-    cljsjs.react-select
     clojure.string
-    devcards.core
     [dmohs.react :as react]
-    [macarthur-lab.dblof-ui.utils :as u])
-  (:require-macros [devcards.core :refer [defcard]]))
+    [macarthur-lab.dblof-ui.pd :as pd]
+    [macarthur-lab.dblof-ui.utils :as u]
+    ))
 
 
-(def api-url-root "http://api.dblof.broadinstitute.org")
+(def api-url-root "http://api.staging.dblof.broadinstitute.org")
 
 
 (defonce genes-atom (atom nil))
@@ -103,16 +102,16 @@
                                  (update-in [:age-bins] conj (get m "age-bins"))))
                            {:exac-age-info [] :age-bins []}
                            (get (get-parsed-response) "rows"))))}))
-; component for navigation bar
+
+
 (react/defc NavBar
-  {
-    :render
-    (fn [{:keys [this state]}]
-      [:div {}
-       [:div {:style {:backgroundColor "#000000" :display "inline-block" :position "relative"
-                      :padding "10" :width "100%" :fontSize "30px" :color "#ffffff"}} "dbLoF"]
-       ])
-    })
+  {:render
+   (fn [{:keys [this state]}]
+     [:div {}
+      [:div {:style {:backgroundColor "#000000" :display "inline-block" :position "relative"
+                     :padding 10 :width "100%" :boxSizing "border-box"
+                     :fontSize "30px" :color "#ffffff"}}
+       "dbLoF"]])})
 
 
 ;New component for displaying the gene details
@@ -133,7 +132,7 @@
         [:div {:style {:flex "1 1 33%" :padding "30px" :textAlign "center"}}
          "n-Homozygotes"
          [:div {} (:n_homozygotes props)]]]]
-
+      [pd/Component (merge {:api-url-root api-url-root} (select-keys props [:gene-name]))]
       [:div {:ref "plot" :style {:width 600 :height 300}}]
       [:div {:ref "plot2" :style {:width 600 :height 300}}]
       [:div {:ref "plot3" :style {:width 600 :height 300}}]
@@ -323,7 +322,8 @@
      ;;The <div> tags are not actual DOM nodes; they are instantiations of React div components.
        [:div {}
         (when lof-ratio
-          [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes :hash hash}])
+          [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes
+                     :hash hash :gene-name (get-gene-name-from-window-hash hash)}])
         [:div {:style {:display (when lof-ratio "none")}}
          [NavBar]
          (when-not full-page-search?
@@ -398,6 +398,4 @@
     (react/create-element
       SearchBoxAndResults
       {})
-    (.. js/document (getElementById "app"))
-    nil
-    hot-reload?))
+    (.. js/document (getElementById "app"))))
