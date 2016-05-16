@@ -12,6 +12,9 @@
 
 
 (defonce genes-atom (atom nil))
+
+
+;if this ajax call fails -> Show error message to user
 (when-not @genes-atom
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
@@ -22,22 +25,17 @@
                                    (map #(get % "gene") (get (get-parsed-response) "rows")))))}))
 
 
+(defn- get-gene-name-from-window-hash [window-hash]
+  (assert (string? window-hash))
+  (nth (clojure.string/split window-hash #"/") 1))
 
-;This function will parse the url and find the gene clicked
-(defn get-gene-name-from-window-hash[current-url]
-  (u/cljslog "current-url" current-url)
-  (u/cljslog "get-gene-name-from-window-hash-->"(nth(clojure.string/split current-url #"/")1))
-  (assert (string? current-url))
-  (nth(clojure.string/split current-url #"/")1))
 
-;ajax call to display
 (defn- get-window-hash []
   (let [value (.. js/window -location -hash)]
     (when-not (clojure.string/blank? value) value)))
 
-;asynchronous function : takes a callback function as parameter and cals that callback function with search results
-;cb -> callback function
-(defn- score_calculator[hash cb]
+
+(defn- calculate-score [window-hash cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
@@ -49,12 +47,13 @@
                            " where symbol = ?) as n_homozygotes,"
                            " (select sum(ac_adj / an_adj) from variant_annotation"
                            " where symbol = ?) as cumulative_af;")
-                    :params (repeat 3 (get-gene-name-from-window-hash hash))})
+                    :params (repeat 3 (get-gene-name-from-window-hash window-hash))})
            :on-done (fn [{:keys [get-parsed-response]}]
                       (let [gene-info (first (get (get-parsed-response) "rows"))]
                         (cb gene-info)))}))
 
-(defn exac-each-gene-pop-calculator [window-hash cb]
+
+(defn- calculate-population-for-gene [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
@@ -62,7 +61,7 @@
                          "select pop as 'each-gene-population',"
                          "pop_frequency as 'each-gene-population-frequency'"
                          "from exac_pop_gene_summary where gene = ? and pop is not NULL")
-                   :params (clojure.string/upper-case (get-gene-name-from-window-hash window-hash))})
+                   :params (clojure.string/upper-case gene-name)})
            :on-done (fn [{:keys [get-parsed-response]}]
                       (cb (reduce (fn [r, m]
                                     (-> r
@@ -134,12 +133,27 @@
         [:div {:style {:flex "1 1 33%" :padding "30px" :textAlign "center"}}
          "n-Homozygotes"
          [:div {} (:n_homozygotes props)]]]]
-       [:div {:ref "plot" :style {:width 600 :height 300}}]
+
+      [:div {:ref "plot" :style {:width 600 :height 300}}]
       [:div {:ref "plot2" :style {:width 600 :height 300}}]
       [:div {:ref "plot3" :style {:width 600 :height 300}}]
-      [:div {}
-       [:h2 {} "Variants"]
-       (map (fn [x] [:div {} (get x "variant_id")]) (:variants @state))]
+
+      [:div {:style {:padding "50px" :color "#FF0000"}}
+        "Variants"
+        [:div {} (map (fn [x]
+          [:div {:style {:display "flex"}}
+           [:div {:style {:flex "0 0 20%" :padding "10px"
+                          :overflow "hidden" :textOverflow "ellipsis"}}
+            (get x "variant_id")]
+           [:div {:style {:flex "0 0 20%" :padding "10px"}}
+                  (get x "chrom")]
+           [:div {:style {:flex "0 0 20%"  :padding "10px"}}
+                  (get x "pos")]
+           [:div {:style {:flex "0 0 20%" :padding "10px"}}
+                  (get x "allele_freq")]
+          [:div {:style {:flex "0 0 20%" :padding "10px"}}
+                  (get x "hom_count")]
+          ]) (:variants @state))]]
       [:div {}
        [:a {:href "#"} "< Back"]]])
 
@@ -197,8 +211,10 @@
                                (react/call :run-age-calculator this results)))
                                (exac-each-gene-age-calculator (:hash props) (fn [results]
                                                                 (react/call :run-each-gene-age-calculator this results )))
-                               (exac-each-gene-pop-calculator (:hash props) (fn [results]
-                                                                     (react/call :run-each-gene-pop-calculator this results)))
+                               (calculate-population-for-gene
+                                (get-gene-name-from-window-hash (u/cljslog "hash" (:hash props)))
+                                (fn [results]
+                                  (react/call :run-each-gene-pop-calculator this results)))
      (react/call :load-variants this))
    :load-variants
    (fn [{:keys [props state]}]
@@ -218,7 +234,9 @@
                              :data (u/->json-string
                                     {:collection-name "variants"
                                      :query {:genes {:$in [gene-id]}}
-                                     :projection {:variant_id 1}
+                                     :projection {:variant_id 1 :chrom 1
+                                                  :pos 1 :allele_count 1
+                                                  :hom_count 1 :allele_freq 1 }
                                      :options {:limit 10000}})
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
@@ -354,7 +372,7 @@
                                   (let [hash (get-window-hash)]
                                     (if hash
                                       (do
-                                        (score_calculator
+                                        (calculate-score
                                           hash
                                           (fn [scores]
                                             (u/cljslog "scores:" scores)
