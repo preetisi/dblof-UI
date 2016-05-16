@@ -1,10 +1,11 @@
 (ns macarthur-lab.dblof-ui.core
   (:require
-    clojure.string
-    [dmohs.react :as react]
-    [macarthur-lab.dblof-ui.pd :as pd]
-    [macarthur-lab.dblof-ui.utils :as u]
-    ))
+   clojure.string
+   [dmohs.react :as react]
+   [macarthur-lab.dblof-ui.pd :as pd]
+   [macarthur-lab.dblof-ui.search-area :as search-area]
+   [macarthur-lab.dblof-ui.utils :as u]
+   ))
 
 
 (def api-url-root "http://api.staging.dblof.broadinstitute.org")
@@ -345,6 +346,7 @@
    (fn [{:keys [this state refs]}]
      (let [{:keys [full-page-search? hash lof-ratio cumulative-af n-homozygotes search-text suggestion exac-age-info age-bins]} @state]
        [:div {}
+        [search-area/Component {}]
         (when lof-ratio
           [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes
                      :hash hash :gene-name (get-gene-name-from-window-hash hash)}])
