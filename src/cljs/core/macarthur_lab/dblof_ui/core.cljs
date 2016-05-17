@@ -138,8 +138,21 @@
       [:div {:ref "plot2" :style {:width 600 :height 300}}]
       [:div {:ref "plot3" :style {:width 600 :height 300}}]
 
-      [:div {:style {:padding "50px" :color "#FF0000"}}
-        "Variants"
+      [:div {:style {:padding "50px" :color "black"}}
+      [:div {:style {:display "flex"}}
+       [:div {:style {:flex "0 0 20%" :padding "10px"
+                      :overflow "hidden" :textOverflow "ellipsis"}}
+         "variant_id"]
+       [:div {:style {:flex "0 0 20%" :padding "10px"}}
+            "chrom"]
+       [:div {:style {:flex "0 0 20%"  :padding "10px"}}
+              "pos"]
+       [:div {:style {:flex "0 0 20%" :padding "10px"
+                      :overflow "hidden" :textOverflow "ellipsis"}}
+            "allele_freq"]
+      [:div {:style {:flex "0 0 20%" :padding "10px"}}
+
+            "hom_count"]]
         [:div {} (map (fn [x]
           [:div {:style {:display "flex"}}
            [:div {:style {:flex "0 0 20%" :padding "10px"
@@ -149,9 +162,11 @@
                   (get x "chrom")]
            [:div {:style {:flex "0 0 20%"  :padding "10px"}}
                   (get x "pos")]
-           [:div {:style {:flex "0 0 20%" :padding "10px"}}
+           [:div {:style {:flex "0 0 20%" :padding "10px"
+                          :overflow "hidden" :textOverflow "ellipsis"}}
                   (get x "allele_freq")]
           [:div {:style {:flex "0 0 20%" :padding "10px"}}
+
                   (get x "hom_count")]
           ]) (:variants @state))]]
       [:div {}
