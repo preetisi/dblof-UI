@@ -118,9 +118,12 @@
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
   {:render
-   (fn [{:keys [this props state ]}] ;;exac-age-info age-bins
+   (fn [{:keys [this props state ]}]
+     (let [{:keys [each-gene-pop? each-gene-age?]} @state]
      [:div {}
       [NavBar]
+      [:div {}
+       [:a {:href "#"} "< Back"]]
       [:div {}
        [:div {:style {:display "flex"}}
         [:div {:style {:flex "1 1 33%" :padding "30px" :textAlign "center"}}
@@ -134,11 +137,25 @@
          [:div {} (:n_homozygotes props)]]]]
       [pd/Component (merge {:api-url-root api-url-root} (select-keys props [:gene-name]))]
       [:div {:ref "plot" :style {:width 600 :height 300}}]
-      [:div {:ref "plot2" :style {:width 600 :height 300}}]
-      [:div {:ref "plot3" :style {:width 600 :height 300}}]
+      (u/cljslog "render each-gene-age" each-gene-age?)
+      (when-not each-gene-age?
+         [:div {:ref "plot2" :style {:width 600 :height 300}}])
+      (when-not each-gene-pop?
+         [:div {:ref "plot3" :style {:width 600 :height 300}}])
 
-      [:div {:style {:padding "50px" :color "#FF0000"}}
-        "Variants"
+      [:div {:style {:padding "50px"}}
+      [:div {:style {:display "flex"}}
+       [:div {:style {:flex "0 0 20%" :padding "10px"
+                      :overflow "hidden" :textOverflow "ellipsis"}}
+              "variant_id"]
+       [:div {:style {:flex "0 0 20%" :padding "10px"}}
+              "chrom"]
+       [:div {:style {:flex "0 0 20%"  :padding "10px"}}
+              "pos"]
+       [:div {:style {:flex "0 0 20%" :padding "10px"}}
+              "allele_freq"]
+      [:div {:style {:flex "0 0 20%" :padding "10px"}}
+              "hom_count"]]
         [:div {} (map (fn [x]
           [:div {:style {:display "flex"}}
            [:div {:style {:flex "0 0 20%" :padding "10px"
@@ -153,8 +170,7 @@
           [:div {:style {:flex "0 0 20%" :padding "10px"}}
                   (get x "hom_count")]
           ]) (:variants @state))]]
-      [:div {}
-       [:a {:href "#"} "< Back"]]])
+      ]))
 
    :run-age-calculator
    (fn [{:keys [this state refs]} results]
@@ -164,15 +180,27 @@
 
    :run-each-gene-age-calculator
    (fn [{:keys [this state refs]} results]
-     (swap! state assoc :exac-each-gene-age-bins (get results "exac-each-gene-age-bins"))
-     (swap! state assoc :exac-each-gene-frequency (get results "exac-each-gene-frequency"))
-     (react/call :build-each-gene-age-plot this (get results :exac-each-gene-age-bins) (get results :exac-each-gene-frequency)))
+     (u/cljslog "results" results)
+     (let [gene-frequency (get results :exac-each-gene-frequency)]
+       (u/cljslog "gene-frequency:: " gene-frequency)
+       (swap! state assoc :exac-each-gene-age-bins (get results :exac-each-gene-age-bins)
+                          :exac-each-gene-frequency gene-frequency
+                          :each-gene-age? (empty? gene-frequency)))
+
+     (react/call :build-each-gene-age-plot this
+                 (get results :exac-each-gene-age-bins)
+                 (get results :exac-each-gene-frequency)))
 
    :run-each-gene-pop-calculator
    (fn [{:keys [this state refs]} results]
-     (swap! state assoc :exac_each_gene_population_category (get results "exac_each_gene_population_category"))
-     (swap! state assoc :exac_each_gene_pop_frequency (get results "exac_each_gene_pop_frequency"))
-     (react/call :build-each-gene-pop-plot this (get results :exac_each_gene_population_category) (get results :exac_each_gene_pop_frequency)))
+     (let [pop_frequency (get results :exac_each_gene_pop_frequency)]
+     (swap! state assoc :exac_each_gene_population_category (get results :exac_each_gene_population_category)
+                        :exac_each_gene_pop_frequency pop_frequency
+                        :each-gene-pop? (empty? pop_frequency)))
+
+     (react/call :build-each-gene-pop-plot this
+                 (get results :exac_each_gene_population_category)
+                 (get results :exac_each_gene_pop_frequency)))
 
    :build-plot
    (fn [{:keys [this refs state]} x y]
@@ -209,7 +237,7 @@
      (exac-age-calculator (fn [results]
                                (react/call :run-age-calculator this results)))
                                (exac-each-gene-age-calculator (:hash props) (fn [results]
-                                                                (react/call :run-each-gene-age-calculator this results )))
+                                                                (react/call :run-each-gene-age-calculator this results)))
                                (calculate-population-for-gene
                                 (get-gene-name-from-window-hash (u/cljslog "hash" (:hash props)))
                                 (fn [results]
@@ -239,6 +267,7 @@
                                      :options {:limit 10000}})
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
+                               (swap! state assoc :variant-table? true)
                                (swap! state assoc :variants (get-parsed-response)))})))})))})
 
 
@@ -305,21 +334,16 @@
 
    })
 
-; Create a component class. A component implements a render method which returns one single child.
-; That child may have an arbitrarily deep child structure
+;component for search box
 (react/defc SearchBoxAndResults
-  ;;render which returns a tree of React components that will eventually render to HTML.
   {
     :get-initial-state
    ;returns str or nil if empty
    (fn [] (u/cljslog "{:hash (get-window-hash)}" {:hash (get-window-hash)}))
 
    :render
-  ;{:keys [this state]} is a map which contains :this :state :props :refs etc
    (fn [{:keys [this state refs]}]
-     ;lof-ratio holds the state for obs/exp
      (let [{:keys [full-page-search? hash lof-ratio cumulative-af n-homozygotes search-text suggestion exac-age-info age-bins]} @state]
-     ;;The <div> tags are not actual DOM nodes; they are instantiations of React div components.
        [:div {}
         (when lof-ratio
           [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes
