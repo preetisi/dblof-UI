@@ -97,7 +97,8 @@
                           :WebkitTransform "rotate(-45deg)"}}
            "⚲"]]]
         [:div {:style {:position "relative" :color "initial"}}
-         [:div {:style {:position "absolute" :zIndex 1}}
+         ;; This z-index must be larger than Plotly's or the plot's toolbar will cover it.
+         [:div {:style {:position "absolute" :zIndex 1002}}
           [SearchResults
            {:ref "results"
             :gene-names gene-names

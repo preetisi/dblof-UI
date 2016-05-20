@@ -24,7 +24,13 @@
          [:div {:style {:flex "0 0 5px"}}]
          (interpose [:div {:style {:flex "0 0 10px"}}] exons)
          [:div {:style {:flex "0 0 5px"}}]]]))
-   :component-did-mount
+   :component-will-receive-props
+   (fn [{:keys [this props state next-props]}]
+     (when-not (apply = (map :gene-name [props next-props]))
+       (swap! state dissoc :status)
+       (this :load-exon-data)))
+   :component-did-mount (fn [{:keys [this]}] (this :load-exon-data))
+   :load-exon-data
    (fn [{:keys [props state]}]
      (u/ajax {:url (str (:api-url-root props) "/exec-sql")
               :method :post
