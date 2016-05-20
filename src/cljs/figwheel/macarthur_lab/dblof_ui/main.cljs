@@ -4,4 +4,4 @@
    macarthur-lab.dblof-ui.install-devtools))
 
 
-(core/render-application true)
+(core/render-application)

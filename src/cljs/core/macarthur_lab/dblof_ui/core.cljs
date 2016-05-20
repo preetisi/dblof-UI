@@ -419,7 +419,7 @@
      ;locals is a atom that contains a map
      (.removeEventListener js/window "hashchange" (get @locals :hash-change-listener) ))})
 
-(defn render-application [& [hot-reload?]]
+(defn render-application []
   (react/render
     (react/create-element
       SearchBoxAndResults

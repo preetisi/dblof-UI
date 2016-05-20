@@ -6,9 +6,8 @@
    [org.clojure/clojurescript "1.8.51"]
    ]
   :plugins [[lein-cljsbuild "1.1.3"] [lein-resource "15.10.2"]]
-  :profiles {:dev {:plugins [[lein-figwheel "0.5.0" :exclusions [org.clojure/clojure]]]
-                   :dependencies [[binaryage/devtools "0.5.2"]
-                                  [devcards "0.2.1" :exclusions [cljsjs/react]]]
+  :profiles {:dev {:plugins [[lein-figwheel "0.5.3" :exclusions [org.clojure/clojure]]]
+                   :dependencies [[binaryage/devtools "0.5.2"]]
                    :cljsbuild
                    {:builds {:client {:source-paths ["src/cljs/devtools"]
                                       :compiler
@@ -16,7 +15,8 @@
                                        :source-map true
                                        :source-map-timestamp true}
                                       :figwheel {:websocket-host :js-client-host}}}}}
-             :figwheel {:cljsbuild
+             :figwheel {:figwheel {:server-ip "0.0.0.0"}
+                        :cljsbuild
                         {:builds
                          {:client {:source-paths ["src/cljs/figwheel"]
                                    :compiler {:main "macarthur-lab.dblof-ui.main"}}}}}
