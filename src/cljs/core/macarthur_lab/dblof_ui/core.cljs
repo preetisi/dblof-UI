@@ -204,34 +204,7 @@
                                (calculate-population-for-gene
                                 (get-gene-name-from-window-hash (u/cljslog "hash" (:hash props)))
                                 (fn [results]
-                                  (react/call :run-each-gene-pop-calculator this results)))
-     (react/call :load-variants this))
-   :load-variants
-   (fn [{:keys [props state]}]
-     (let [gene-name (get-gene-name-from-window-hash (get-window-hash))
-           gene-name-uc (clojure.string/upper-case gene-name)]
-       (u/ajax {:url (str api-url-root "/exec-mongo")
-                :method :post
-                :data (u/->json-string
-                       {:collection-name "genes"
-                        :query {:gene_name_upper {:$eq gene-name-uc}}
-                        :projection {:gene_id 1}})
-                :on-done
-                (fn [{:keys [get-parsed-response]}]
-                  (let [gene-id (get-in (get-parsed-response) [0 "gene_id"])]
-                    (u/ajax {:url (str api-url-root "/exec-mongo")
-                             :method :post
-                             :data (u/->json-string
-                                    {:collection-name "variants"
-                                     :query {:genes {:$in [gene-id]}}
-                                     :projection {:variant_id 1 :chrom 1
-                                                  :pos 1 :allele_count 1
-                                                  :hom_count 1 :allele_freq 1 }
-                                     :options {:limit 10000}})
-                             :on-done
-                             (fn [{:keys [get-parsed-response]}]
-                               (swap! state assoc :variant-table? true)
-                               (swap! state assoc :variants (get-parsed-response)))})))})))})
+                                  (react/call :run-each-gene-pop-calculator this results))))})
 
 
 (defn transform-vector-to-gene-label-map [m]
