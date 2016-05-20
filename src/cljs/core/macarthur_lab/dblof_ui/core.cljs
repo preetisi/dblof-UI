@@ -105,16 +105,6 @@
                            (get (get-parsed-response) "rows"))))}))
 
 
-(react/defc NavBar
-  {:render
-   (fn [{:keys [this state]}]
-     [:div {}
-      [:div {:style {:backgroundColor "#000000" :display "inline-block" :position "relative"
-                     :padding 10 :width "100%" :boxSizing "border-box"
-                     :fontSize "30px" :color "#ffffff"}}
-       "dbLoF"]])})
-
-
 ;New component for displaying the gene details
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
@@ -122,7 +112,6 @@
    (fn [{:keys [this props state ]}]
      (let [{:keys [each-gene-pop? each-gene-age?]} @state]
      [:div {}
-      [NavBar]
       [:div {}
        [:a {:href "#"} "< Back"]]
       [:div {}
@@ -276,17 +265,6 @@
   {:label (get m "gene")
    :value (get m "gene")})
 
-(defn- search-db-handler[search-term cb]
-  (u/ajax {:url (str api-url-root "/exec-sql")
-           :method :post
-           :data (u/->json-string
-                   {:sql (str
-                           "select gene from constraint_scores where gene like ?"
-                           " order by gene limit 20")
-                    :params [(str "%" search-term "%")]})
-           :on-done (fn [{:keys [get-parsed-response]}]
-                        (cb (mapv transform-vector-to-gene-label-map (get (get-parsed-response) "rows"))))}))
-
 
 ;component for displaying auto-select list of genes
 (react/defc SearchResults
@@ -331,9 +309,8 @@
                        (let [filtered (filter #(= 0 (.indexOf % search-text)) @genes-atom)
                              results (take 20 (sort filtered))]
                          (swap! state assoc :results results :selected-index 0)))
-                     100)))))))
+                     100)))))))})
 
-   })
 
 ;component for search box
 (react/defc SearchBoxAndResults
@@ -344,51 +321,12 @@
 
    :render
    (fn [{:keys [this state refs]}]
-     (let [{:keys [full-page-search? hash lof-ratio cumulative-af n-homozygotes search-text suggestion exac-age-info age-bins]} @state]
+     (let [{:keys [hash lof-ratio cumulative-af n-homozygotes search-text suggestion exac-age-info age-bins]} @state]
        [:div {}
-        [search-area/Component {}]
+        [search-area/Component {:api-url-root api-url-root :compact? hash}]
         (when lof-ratio
           [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes
-                     :hash hash :gene-name (get-gene-name-from-window-hash hash)}])
-        [:div {:style {:display (when lof-ratio "none")}}
-         [NavBar]
-         (when-not full-page-search?
-           [:div {:style {:margin "10vh 0 0 30vw" :fontWeight "bold" :fontSize "30px"}}
-            "dbLoF | Database for Loss of Function Variants"])
-         [:div {:style {:margin (if full-page-search? "10px 0 0 0" "10px 0 0 0")
-                        :textAlign "center"}}
-          [:input {:ref "search-box"
-                   :value (str search-text (subs (or suggestion "") (count search-text)))
-                   :onChange #(swap! state assoc :suggestion nil :search-text (.. % -target -value))
-                   :onKeyDown (fn [e]
-                                (when (= 13 (.-keyCode e))
-                                  (react/call :report-selection (@refs "results")))
-                                (when (= 38 (.-keyCode e))
-                                  (.preventDefault e)
-                                  (react/call :select-prev-item (@refs "results")))
-                                (when (= 40 (.-keyCode e))
-                                  (.preventDefault e)
-                                  (react/call :select-next-item (@refs "results"))))
-                   :style {:fontSize "medium" :width 200}}]
-          [:br]
-          [SearchResults {:ref "results"
-                          :search-text search-text
-                          :on-item-selected (fn [item]
-                                              (aset js/window "location" "hash"
-                                                    (str "genes/" item)))
-                          :style {:container {:width 210 :display "inline-block" :textAlign "left"}}}]
-
-         ]]]))
-
-   :perform-search
-   (fn [{:keys [state refs]}]
-     (swap! state assoc :full-page-search? true)
-       (search-db-handler
-       (.-value (@refs "search-box"))
-       (fn [results] ;callback function which takes the results of (search-handler search-term)
-         (swap! state assoc :search-results results)))
-     )
-
+                     :hash hash :gene-name (get-gene-name-from-window-hash hash)}])]))
     ;so there should be one more component-did-mount where you do the ajax call(using gene-details-handler function
     ; and swap the state of gene-details
     ;(swap! state assoc :gene-info {:lof-ratio lof-ratio})
@@ -397,20 +335,16 @@
      (let [hash-change-listener (fn [e]
                                   (let [hash (get-window-hash)]
                                     (if hash
-                                      (do
-                                        (calculate-score
-                                          hash
-                                          (fn [scores]
-                                            (u/cljslog "scores:" scores)
-                                            (swap! state assoc :hash hash
-                                                   :lof-ratio (get scores "lof_ratio")
-                                                               :cumulative-af (get scores "cumulative_af")
-                                                               :n-homozygotes (get scores "n_homozygotes"))
-                                            (u/cljslog @state)
-                                            ))))
-                                      (swap! state dissoc :lof-ratio)
-                                      (swap! state dissoc :cumulative-af)
-                                      (swap! state dissoc :n-homozygotes)))]
+                                      (calculate-score
+                                       hash
+                                       (fn [scores]
+                                         (swap! state assoc
+                                                :hash hash
+                                                :lof-ratio (get scores "lof_ratio")
+                                                :cumulative-af (get scores "cumulative_af")
+                                                :n-homozygotes (get scores "n_homozygotes"))))
+                                      (swap! state dissoc
+                                             :hash :lof-ratio :cumulative-af :n-homozygotes))))]
        (swap! locals assoc :hash-change-listener hash-change-listener )
       (.addEventListener js/window "hashchange" hash-change-listener)))
    ;remove the event listener
