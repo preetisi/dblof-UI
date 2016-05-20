@@ -43,7 +43,9 @@
                 :style {:display "block"
                         :cursor "pointer"
                         :backgroundColor (when (= i selected-index) "rgba(220,245,250,1)")
-                        :padding "0 6px"}}
+                        :padding "4px 6px"
+                        :textDecoration "none"
+                        :color "inherit"}}
             (clojure.string/upper-case x)])
          results)]))
    :component-did-update
@@ -94,7 +96,7 @@
                           :WebkitTransform "rotate(-45deg)"}}
            "⚲"]]]
         [:div {:style {:position "relative" :color "initial"}}
-         [:div {:style {:position "absolute"}}
+         [:div {:style {:position "absolute" :zIndex 1}}
           [SearchResults
            {:ref "results"
             :gene-names gene-names
@@ -102,7 +104,8 @@
             :create-href (fn [item] (str "#genes/" item))
             :on-item-selected (fn [item] (aset js/window "location" "hash" (str "genes/" item)))
             :style {:container
-                    {:width 210
+                    {:width 310
+                     :border "1px solid #ccc"
                      :display (if focused? "inline-block" "none")
                      :textAlign "left"
                      :backgroundColor "white"}}}]]]
