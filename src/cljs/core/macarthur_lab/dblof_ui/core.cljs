@@ -5,6 +5,7 @@
    [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.search-area :as search-area]
    [macarthur-lab.dblof-ui.utils :as u]
+   [macarthur-lab.dblof-ui.variant-table :as variant-table]
    ))
 
 
@@ -132,36 +133,8 @@
          [:div {:ref "plot2" :style {:width 600 :height 300}}])
       (when-not each-gene-pop?
          [:div {:ref "plot3" :style {:width 600 :height 300}}])
-
-      [:div {:style {:padding "50px"}}
-      [:div {:style {:display "flex"}}
-       [:div {:style {:flex "0 0 20%" :padding "10px"
-                      :overflow "hidden" :textOverflow "ellipsis"}}
-              "variant_id"]
-       [:div {:style {:flex "0 0 20%" :padding "10px"}}
-              "chrom"]
-       [:div {:style {:flex "0 0 20%"  :padding "10px"}}
-              "pos"]
-       [:div {:style {:flex "0 0 20%" :padding "10px"}}
-              "allele_freq"]
-      [:div {:style {:flex "0 0 20%" :padding "10px"}}
-              "hom_count"]]
-        [:div {} (map (fn [x]
-          [:div {:style {:display "flex"}}
-           [:div {:style {:flex "0 0 20%" :padding "10px"
-                          :overflow "hidden" :textOverflow "ellipsis"}}
-            (get x "variant_id")]
-           [:div {:style {:flex "0 0 20%" :padding "10px"}}
-                  (get x "chrom")]
-           [:div {:style {:flex "0 0 20%"  :padding "10px"}}
-                  (get x "pos")]
-           [:div {:style {:flex "0 0 20%" :padding "10px"}}
-                  (get x "allele_freq")]
-          [:div {:style {:flex "0 0 20%" :padding "10px"}}
-                  (get x "hom_count")]
-          ]) (:variants @state))]]
-      ]))
-
+      [:div {:style {:marginTop 50}}
+       [variant-table/Component {:variants (:variants @state)}]]]))
    :run-age-calculator
    (fn [{:keys [this state refs]} results]
      (swap! state assoc :age-bins (get results :age-bins))
