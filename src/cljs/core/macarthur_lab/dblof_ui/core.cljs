@@ -128,13 +128,13 @@
          [:div {} (:n_homozygotes props)]]]]
       [pd/Component (merge {:api-url-root api-url-root} (select-keys props [:gene-name]))]
       [:div {:ref "plot" :style {:width 600 :height 300}}]
-      (u/cljslog "render each-gene-age" each-gene-age?)
       (when-not each-gene-age?
          [:div {:ref "plot2" :style {:width 600 :height 300}}])
       (when-not each-gene-pop?
          [:div {:ref "plot3" :style {:width 600 :height 300}}])
       [:div {:style {:marginTop 50}}
-       [variant-table/Component {:variants (:variants @state)}]]]))
+       [variant-table/Component (merge {:api-url-root api-url-root}
+                                       (select-keys props [:gene-name]))]]]))
    :run-age-calculator
    (fn [{:keys [this state refs]} results]
      (swap! state assoc :age-bins (get results :age-bins))

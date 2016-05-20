@@ -35,7 +35,8 @@
    (fn [{:keys [this props state]}]
      (let [{:keys [hide? style search-text create-href]} props
            {:keys [results selected-index]} @state]
-       [:div {:style (merge {:margin "4px 0 0 0"} (:container style))}
+       [:div {:style (merge {:margin "4px 0 0 0"} (:container style)
+                            (when (zero? (count results)) {:display "none"}))}
         (map-indexed
          (fn [i x]
            [:a {:onMouseOver #(swap! state assoc :selected-index i)
