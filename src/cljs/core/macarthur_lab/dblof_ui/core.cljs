@@ -135,6 +135,12 @@
       [:div {:style {:marginTop 50}}
        [variant-table/Component (merge {:api-url-root api-url-root}
                                        (select-keys props [:gene-name]))]]]))
+   :component-did-mount
+   (fn [{:keys [this]}]
+     (this :render-plots))
+   :component-will-receive-props
+   (fn [{:keys [this after-update]}]
+     (after-update #(this :render-plots)))
    :run-age-calculator
    (fn [{:keys [this state refs]} results]
      (swap! state assoc :age-bins (get results :age-bins))
@@ -169,7 +175,7 @@
    (fn [{:keys [this refs state]} x y]
      #_(.style (.select (.-d3 js/Plotly) "body") "background-color" "")
      (-> js/Plotly .-d3 (.select "body") (.style "background-color" ""))
-     (.plot js/Plotly (@refs "plot")
+     (.newPlot js/Plotly (@refs "plot")
        (clj->js [{:type "bar"
                   :name "age distributin"
                   :x x
@@ -179,7 +185,7 @@
 
    :build-each-gene-age-plot
    (fn [{:keys [this refs state]} x y]
-     (.plot js/Plotly (@refs "plot2")
+     (.newPlot js/Plotly (@refs "plot2")
             (clj->js [{:type "bar"
                        :title "age distribution"
                        :x x
@@ -187,24 +193,23 @@
             (clj->js {:margin {:t 10}})))
    :build-each-gene-pop-plot
    (fn [{:keys [this refs state]} x y]
-     (.plot js/Plotly (@refs "plot3")
+     (.newPlot js/Plotly (@refs "plot3")
             (clj->js [{:type "bar"
                        :name "age distributin"
                        :x y
                        :y x
                        :orientation "h"}])
             (clj->js {:margin {:t 10}})))
-
-   :component-did-mount
+   :render-plots
    (fn [{:keys [this props state refs]}]
      (exac-age-calculator (fn [results]
-                               (react/call :run-age-calculator this results)))
-                               (exac-each-gene-age-calculator (:hash props) (fn [results]
-                                                                (react/call :run-each-gene-age-calculator this results)))
-                               (calculate-population-for-gene
-                                (get-gene-name-from-window-hash (u/cljslog "hash" (:hash props)))
-                                (fn [results]
-                                  (react/call :run-each-gene-pop-calculator this results))))})
+                            (react/call :run-age-calculator this results)))
+     (exac-each-gene-age-calculator (:hash props) (fn [results]
+                                                    (react/call :run-each-gene-age-calculator this results)))
+     (calculate-population-for-gene
+      (get-gene-name-from-window-hash (u/cljslog "hash" (:hash props)))
+      (fn [results]
+        (react/call :run-each-gene-pop-calculator this results))))})
 
 
 (defn transform-vector-to-gene-label-map [m]
