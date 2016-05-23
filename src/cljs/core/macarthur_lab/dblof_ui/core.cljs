@@ -4,6 +4,7 @@
    [dmohs.react :as react]
    [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.search-area :as search-area]
+   [macarthur-lab.dblof-ui.stats-box :as stats-box]
    [macarthur-lab.dblof-ui.utils :as u]
    [macarthur-lab.dblof-ui.variant-table :as variant-table]
    ))
@@ -34,24 +35,6 @@
 (defn- get-window-hash []
   (let [value (.. js/window -location -hash)]
     (when-not (clojure.string/blank? value) value)))
-
-
-(defn- calculate-score [window-hash cb]
-  (u/ajax {:url (str api-url-root "/exec-sql")
-           :method :post
-           :data (u/->json-string
-                   {:sql (str
-                           "select"
-                           " (select (n_lof / exp_lof) * 100 from constraint_scores"
-                           " where gene = ?) as lof_ratio,"
-                           " (select sum(ac_hom) from variant_annotation"
-                           " where symbol = ?) as n_homozygotes,"
-                           " (select sum(ac_adj / an_adj) from variant_annotation"
-                           " where symbol = ?) as cumulative_af;")
-                    :params (repeat 3 (get-gene-name-from-window-hash window-hash))})
-           :on-done (fn [{:keys [get-parsed-response]}]
-                      (let [gene-info (first (get (get-parsed-response) "rows"))]
-                        (cb gene-info)))}))
 
 
 (defn- calculate-population-for-gene [gene-name cb]
@@ -110,29 +93,26 @@
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
   {:render
-   (fn [{:keys [this props state ]}]
-     (let [{:keys [each-gene-pop? each-gene-age?]} @state]
-     [:div {}
-      [:div {}
-       [:div {:style {:display "flex"}}
-        [:div {:style {:flex "1 1 33%" :padding "30px" :textAlign "center"}}
-         "Observed/Expected"
-         [:div {} (:lof_ratio props)]]
-        [:div {:style {:flex "1 1 33%":padding "30px" :textAlign "center" }}
-         "Cumulative AF"
-         [:div {} (:cumulative_af props)]]
-        [:div {:style {:flex "1 1 33%" :padding "30px" :textAlign "center"}}
-         "n-Homozygotes"
-         [:div {} (:n_homozygotes props)]]]]
-      [pd/Component (merge {:api-url-root api-url-root} (select-keys props [:gene-name]))]
-      [:div {:ref "plot" :style {:width 600 :height 300}}]
-      (when-not each-gene-age?
-         [:div {:ref "plot2" :style {:width 600 :height 300}}])
-      (when-not each-gene-pop?
-         [:div {:ref "plot3" :style {:width 600 :height 300}}])
-      [:div {:style {:marginTop 50}}
-       [variant-table/Component (merge {:api-url-root api-url-root}
-                                       (select-keys props [:gene-name]))]]]))
+   (fn [{:keys [this props state]}]
+     (let [{:keys [gene-name]} props
+           {:keys [each-gene-pop? each-gene-age?]} @state]
+       [:div {:style {:backgroundColor "#E9E9E9"}}
+        [:div {:style {:paddingTop 30 :display "flex"}}
+         [:div {:style {:flex "1 1 50%"}}
+          [:div {:style {:fontSize "180%" :fontWeight 900}}
+           "Gene: " (clojure.string/upper-case gene-name)]]
+         [:div {:style {:flex "1 1 50%"}}
+          [stats-box/Component (merge {:api-url-root api-url-root}
+                                      (select-keys props [:gene-name]))]]]
+        [pd/Component (merge {:api-url-root api-url-root} (select-keys props [:gene-name]))]
+        [:div {:ref "plot" :style {:width 600 :height 300}}]
+        (when-not each-gene-age?
+          [:div {:ref "plot2" :style {:width 600 :height 300}}])
+        (when-not each-gene-pop?
+          [:div {:ref "plot3" :style {:width 600 :height 300}}])
+        [:div {:style {:marginTop 50}}
+         [variant-table/Component (merge {:api-url-root api-url-root}
+                                         (select-keys props [:gene-name]))]]]))
    :component-did-mount
    (fn [{:keys [this]}]
      (this :render-plots))
@@ -270,12 +250,11 @@
 
    :render
    (fn [{:keys [this state refs]}]
-     (let [{:keys [hash lof-ratio cumulative-af n-homozygotes search-text suggestion exac-age-info age-bins]} @state]
+     (let [{:keys [hash search-text suggestion exac-age-info age-bins]} @state]
        [:div {}
         [search-area/Component {:api-url-root api-url-root :compact? hash}]
-        (when lof-ratio
-          [GeneInfo {:lof_ratio lof-ratio :cumulative_af cumulative-af :n_homozygotes n-homozygotes
-                     :hash hash :gene-name (get-gene-name-from-window-hash hash)}])]))
+        (when hash
+          [GeneInfo {:hash hash :gene-name (get-gene-name-from-window-hash hash)}])]))
     ;so there should be one more component-did-mount where you do the ajax call(using gene-details-handler function
     ; and swap the state of gene-details
     ;(swap! state assoc :gene-info {:lof-ratio lof-ratio})
@@ -284,23 +263,16 @@
      (let [hash-change-listener (fn [e]
                                   (let [hash (get-window-hash)]
                                     (if hash
-                                      (calculate-score
-                                       hash
-                                       (fn [scores]
-                                         (swap! state assoc
-                                                :hash hash
-                                                :lof-ratio (get scores "lof_ratio")
-                                                :cumulative-af (get scores "cumulative_af")
-                                                :n-homozygotes (get scores "n_homozygotes"))))
-                                      (swap! state dissoc
-                                             :hash :lof-ratio :cumulative-af :n-homozygotes))))]
-       (swap! locals assoc :hash-change-listener hash-change-listener )
-      (.addEventListener js/window "hashchange" hash-change-listener)))
+                                      (swap! state assoc :hash hash)
+                                      (swap! state dissoc :hash))))]
+       (swap! locals assoc :hash-change-listener hash-change-listener)
+       (.addEventListener js/window "hashchange" hash-change-listener)))
    ;remove the event listener
    :component-will-unmount
    (fn [{:keys [locals]}]
      ;locals is a atom that contains a map
-     (.removeEventListener js/window "hashchange" (get @locals :hash-change-listener) ))})
+     (.removeEventListener js/window "hashchange" (get @locals :hash-change-listener)))})
+
 
 (defn render-application []
   (react/render
