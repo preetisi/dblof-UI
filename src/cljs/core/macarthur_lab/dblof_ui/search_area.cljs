@@ -9,7 +9,7 @@
 (react/defc Logo
   {:render
    (fn []
-     [:span {:style {:float "left"}}
+     [:a {:href "#" :style {:float "left" :color "inherit" :textDecoration "none"}}
       [:span {:style {:display "block" :fontSize 40}}
        [:span {:style {:color "#24AFB2" :fontWeight 100}} "db"]
        [:span {:style {}} "LoF"]]

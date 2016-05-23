@@ -114,8 +114,6 @@
      (let [{:keys [each-gene-pop? each-gene-age?]} @state]
      [:div {}
       [:div {}
-       [:a {:href "#"} "< Back"]]
-      [:div {}
        [:div {:style {:display "flex"}}
         [:div {:style {:flex "1 1 33%" :padding "30px" :textAlign "center"}}
          "Observed/Expected"
