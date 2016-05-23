@@ -195,52 +195,6 @@
    :value (get m "gene")})
 
 
-;component for displaying auto-select list of genes
-(react/defc SearchResults
-  {:select-next-item
-   (fn [{:keys [this state after-update]}]
-     (swap! state assoc :selected-index (inc (or (:selected-index @state) -1))))
-   :select-prev-item
-   (fn [{:keys [this state after-update]}]
-     (swap! state assoc :selected-index (dec (:selected-index @state))))
-   :report-selection
-   (fn [{:keys [props state]}]
-     (let [{:keys [on-item-selected]} props
-           {:keys [results selected-index]} @state]
-       (when on-item-selected
-         (on-item-selected (nth results selected-index)))))
-   ;:exac-wide-age-info
-   :render
-   (fn [{:keys [this props state]}]
-     (let [{:keys [style search-text]} props
-           {:keys [results selected-index]} @state]
-       [:div {:style (merge {:margin "4px 0 0 0"} (:container style))}
-        (map-indexed
-         (fn [i x]
-           [:div {:onMouseOver #(swap! state assoc :selected-index i)
-                  :onClick #(react/call :report-selection this)
-                  :style {:cursor "pointer"
-                          :backgroundColor (when (= i selected-index) "rgba(220,245,250,1)")
-                          :padding "0 6px"}}
-            (clojure.string/upper-case x)])
-         results)]))
-   :component-did-update
-   (fn [{:keys [this prev-props props state locals]}]
-     (js/clearTimeout (:timeout @locals))
-     (let [{:keys [search-text]} props]
-       (when-not (= (:search-text prev-props) search-text)
-         (if (clojure.string/blank? search-text)
-           (swap! state dissoc :results :selected-index)
-           (let [search-text (clojure.string/lower-case search-text)]
-             (swap! locals assoc :timeout
-                    (js/setTimeout
-                     (fn []
-                       (let [filtered (filter #(= 0 (.indexOf % search-text)) @genes-atom)
-                             results (take 20 (sort filtered))]
-                         (swap! state assoc :results results :selected-index 0)))
-                     100)))))))})
-
-
 ;component for search box
 (react/defc SearchBoxAndResults
   {
@@ -250,7 +204,7 @@
 
    :render
    (fn [{:keys [this state refs]}]
-     (let [{:keys [hash search-text suggestion exac-age-info age-bins]} @state]
+     (let [{:keys [hash exac-age-info age-bins]} @state]
        [:div {}
         [search-area/Component {:api-url-root api-url-root :compact? hash}]
         (when hash
