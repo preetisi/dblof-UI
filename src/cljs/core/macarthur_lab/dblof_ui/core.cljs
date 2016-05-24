@@ -121,14 +121,14 @@
                                       (select-keys props [:gene-name]))]]]
         [:div {:style {:height 30}}]
         [pd/Component (merge {:api-url-root api-url-root} (select-keys props [:gene-name]))]
-      (when-not each-gene-pop?
-         [:div {:ref "population-plot" :style {:width 600 :height 300 :padding "50px"}}])
-      ;group age plot
-      [:div {:ref "group-plot" :style {:width 600 :height 300 :padding "50px"}}]
-
-      [:div {:style {:marginTop 50}}
-       [variant-table/Component (merge {:api-url-root api-url-root}
-                                       (select-keys props [:gene-name]))]]]))
+        [:div {:style {:height 30}}]
+        [:div {:style {:display "flex" :justifyContent "space-between"}}
+         ;; group age plot
+         [:div {:ref "group-plot" :style {:flex "0 0 48%" :height 300}}]
+         [:div {:ref "population-plot" :style {:flex "0 0 48%" :height 300}}]]
+        [:div {:style {:marginTop 50}}
+         [variant-table/Component (merge {:api-url-root api-url-root}
+                                         (select-keys props [:gene-name]))]]]))
    :component-did-mount
    (fn [{:keys [this]}]
      (this :render-plots))
@@ -159,7 +159,9 @@
                        :x y
                        :y x
                        :orientation "h"}])
-            (clj->js {:title "Population distribution" :xaxis {:title "Frequency"} :yaxis {:title "Population"}:margin {:t 100 :l 50 :r 50 :b 100} :width 600 :height 400})))
+            (clj->js {:title "Population distribution"
+                      :xaxis {:title "Frequency"}
+                      :yaxis {:title "Population"}})))
    :build-group-ages-plot
    (fn [{:keys [this refs state]} x1 y1 x2 y2]
      (.newPlot js/Plotly (@refs "group-plot")
@@ -172,7 +174,9 @@
                        :name "Age distribution of each gene"
                        :x y1
                        :y x2}])
-            (clj->js {:title "Age distribution" :xaxis {:title "Age"} :yaxis {:title "Frequency"} :margin {:t 100 :l 50 :r 50 :b 100} :width 600 :height 400})))
+            (clj->js {:title "Age distribution"
+                      :xaxis {:title "Age"}
+                      :yaxis {:title "Frequency"}})))
    :render-plots
    (fn [{:keys [this props state refs]}]
      (calculate-population-for-gene
