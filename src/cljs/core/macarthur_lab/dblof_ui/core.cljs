@@ -139,20 +139,6 @@
      (swap! state assoc :age-bins (get results :age-bins))
      (swap! state assoc :exac-age-info (get results :exac-age-info))
      (react/call :build-plot this (get results :age-bins) (get results :exac-age-info)))
-
-   :run-each-gene-age-calculator
-   (fn [{:keys [this state refs]} results]
-     (u/cljslog "results" results)
-     (let [gene-frequency (get results :exac-each-gene-frequency)]
-       (u/cljslog "gene-frequency:: " gene-frequency)
-       (swap! state assoc :exac-each-gene-age-bins (get results :exac-each-gene-age-bins)
-                          :exac-each-gene-frequency gene-frequency
-                          :each-gene-age? (empty? gene-frequency)))
-
-     (react/call :build-each-gene-age-plot this
-                 (get results :exac-each-gene-age-bins)
-                 (get results :exac-each-gene-frequency)))
-
    :run-each-gene-pop-calculator
    (fn [{:keys [this state refs]} results]
      (let [pop_frequency (get results :exac_each_gene_pop_frequency)]
@@ -163,7 +149,6 @@
      (react/call :build-each-gene-pop-plot this
                  (get results :exac_each_gene_population_category)
                  (get results :exac_each_gene_pop_frequency)))
-
    :build-each-gene-pop-plot
    (fn [{:keys [this refs state]} x y]
      (.newPlot js/Plotly (@refs "population-plot")
@@ -174,8 +159,6 @@
                        :y x
                        :orientation "h"}])
             (clj->js {:title "Population distribution" :xaxis {:title "Frequency"} :yaxis {:title "Population"}:margin {:t 100 :l 50 :r 50 :b 100} :width 600 :height 400})))
-
-
    :build-group-ages-plot
    (fn [{:keys [this refs state]} x1 y1 x2 y2]
      (.newPlot js/Plotly (@refs "group-plot")
@@ -189,7 +172,6 @@
                        :x y1
                        :y x2}])
             (clj->js {:title "Age distribution" :xaxis {:title "Age"} :yaxis {:title "Frequency"} :margin {:t 100 :l 50 :r 50 :b 100} :width 600 :height 400})))
-
    :render-plots
    (fn [{:keys [this props state refs]}]
      (calculate-population-for-gene
