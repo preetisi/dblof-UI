@@ -70,39 +70,6 @@
                                   {:exac_each_gene_pop_frequency [] :exac_each_gene_population_category []}
                                   (get (get-parsed-response) "rows"))))}))
 
-#_(defn- calculate-age-for-each-gene [gene-name cb]
-  (u/ajax {:url (str api-url-root "/exec-sql")
-           :method :post
-           :data (u/->json-string
-                  {:sql (str
-                         "select b as 'each-age-bins', `count(*)` as 'exac-each-gene-age-frequency'"
-                         "from exac_age_gene_summary where gene = ?")
-                   :params (clojure.string/upper-case gene-name)})
-           :on-done (fn [{:keys [get-parsed-response]}]
-                      (cb (reduce (fn [r, m]
-                                    (-> r
-                                        (update-in [:exac-each-gene-frequency] conj (get m "exac-each-gene-age-frequency"))
-                                        (update-in [:exac-each-gene-age-bins] conj (get m "each-age-bins"))))
-                                  {:exac-each-gene-frequency [] :exac-each-gene-age-bins []}
-                                  (get (get-parsed-response) "rows"))))}))
-
-#_(defn- calculate-age-for-whole-exac [cb]
-  (u/ajax {:url (str api-url-root "/exec-sql")
-           :method :post
-           :data (u/->json-string
-                  {:sql (str
-                         "select `count(*)` as `exac-age-frequency`,
-                            age_exac as `age-bins` from metadata_age
-                            where age_exac is not NULL")
-                   :params []})
-           :on-done (fn [{:keys [get-parsed-response]}]
-                      (cb (reduce
-                           (fn [r m]
-                             (-> r
-                                 (update-in [:exac-age-info] conj (get m "exac-age-frequency"))
-                                 (update-in [:age-bins] conj (get m "age-bins"))))
-                           {:exac-age-info [] :age-bins []}
-                           (get (get-parsed-response) "rows"))))}))
 
 (defn- calculate-exac-group-age [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
