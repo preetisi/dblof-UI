@@ -16,7 +16,7 @@
 (react/defc Component
   {:render
    (fn [{:keys [props state]}]
-     [:div {:style {:marginTop 50}}
+     [:div {:style {:paddingTop 50}}
       [:div {:style {:display "flex"}}
        (map (fn [col]
               [:div {:style {:flex "0 0 20%" :padding 10 :boxSizing "border-box"
@@ -33,12 +33,16 @@
                     columns)])
             (:variants @state))]])
    :component-did-mount
-   (fn [{:keys [this]}]
-     (this :load-variants))
+   (fn [{:keys [this props]}]
+     (this :load-variants (:gene-name props)))
+   :component-will-receive-props
+   (fn [{:keys [this props state next-props]}]
+     (when-not (apply = (map :gene-name [props next-props]))
+       (this :load-variants (:gene-name next-props))))
    :load-variants
-   (fn [{:keys [props state]}]
+   (fn [{:keys [props state]} gene-name]
      (let [exec-mongo-url (str (:api-url-root props) "/exec-mongo")
-           gene-name-uc (clojure.string/upper-case (:gene-name props))]
+           gene-name-uc (clojure.string/upper-case gene-name)]
        (u/ajax {:url exec-mongo-url
                 :method :post
                 :data (u/->json-string

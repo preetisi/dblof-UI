@@ -110,7 +110,7 @@
   {:render
    (fn [{:keys [this props state]}]
      (let [{:keys [gene-name]} props
-           {:keys [each-gene-pop? each-gene-age?]} @state]
+           {:keys [each-gene-pop? each-gene-age? show-gene-info?]} @state]
        [:div {:style {:backgroundColor "#E9E9E9"}}
         [:div {:style {:paddingTop 30 :display "flex"}}
          [:div {:style {:flex "1 1 50%"}}
@@ -126,9 +126,27 @@
          ;; group age plot
          [:div {:ref "group-plot" :style {:flex "0 0 48%" :height 300}}]
          [:div {:ref "population-plot" :style {:flex "0 0 48%" :height 300}}]]
-        [:div {:style {:marginTop 50}}
-         [variant-table/Component (merge {:api-url-root api-url-root}
-                                         (select-keys props [:gene-name]))]]]))
+        [:div {:style {:height 30}}]
+        [:div {:style {:display "flex"}}
+         [:div {:style {:flex "0 0 50%"
+                        :backgroundColor (when-not show-gene-info? "white")
+                        :cursor (when show-gene-info? "pointer")
+                        :padding "10px 0"
+                        :fontWeight "bold" :fontSize "120%" :textAlign "center"}
+                :onClick #(swap! state assoc :show-gene-info? false)}
+          "Variant Information"]
+         [:div {:style {:flex "0 0 50%"
+                        :backgroundColor (when show-gene-info? "white")
+                        :cursor (when-not show-gene-info? "pointer")
+                        :padding "10px 0"
+                        :fontWeight "bold" :fontSize "120%" :textAlign "center"}
+                :onClick #(swap! state assoc :show-gene-info? true)}
+          "Gene Information"]]
+        [:div {:style {:backgroundColor "white"}}
+         (if show-gene-info?
+           [:div {} "Gene info"]
+           [variant-table/Component (merge {:api-url-root api-url-root}
+                                           (select-keys props [:gene-name]))])]]))
    :component-did-mount
    (fn [{:keys [this]}]
      (this :render-plots))
