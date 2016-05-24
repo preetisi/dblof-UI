@@ -36,6 +36,22 @@
   (let [value (.. js/window -location -hash)]
     (when-not (clojure.string/blank? value) value)))
 
+(defn- calculate-score [window-hash cb]
+  (u/ajax {:url (str api-url-root "/exec-sql")
+           :method :post
+           :data (u/->json-string
+                   {:sql (str
+                           " select"
+                           " (select (n_lof / exp_lof) * 100 from constraint_scores"
+                           " where gene = ?) as lof_ratio,"
+                           " (select sum(ac_hom) from variant_annotation"
+                           " where symbol = ?) as n_homozygotes,"
+                           " (select sum(ac_adj / an_adj) from variant_annotation"
+                           " where symbol = ?) as cumulative_af;")
+                    :params (repeat 3 (get-gene-name-from-window-hash window-hash))})
+           :on-done (fn [{:keys [get-parsed-response]}]
+                      (let [gene-info (first (get (get-parsed-response) "rows"))]
+                        (cb gene-info)))}))
 
 (defn- calculate-population-for-gene [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
@@ -54,14 +70,14 @@
                                   {:exac_each_gene_pop_frequency [] :exac_each_gene_population_category []}
                                   (get (get-parsed-response) "rows"))))}))
 
-(defn- exac-each-gene-age-calculator [window-hash cb]
+#_(defn- calculate-age-for-each-gene [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
                   {:sql (str
                          "select b as 'each-age-bins', `count(*)` as 'exac-each-gene-age-frequency'"
                          "from exac_age_gene_summary where gene = ?")
-                   :params (clojure.string/upper-case (get-gene-name-from-window-hash window-hash))})
+                   :params (clojure.string/upper-case gene-name)})
            :on-done (fn [{:keys [get-parsed-response]}]
                       (cb (reduce (fn [r, m]
                                     (-> r
@@ -70,7 +86,7 @@
                                   {:exac-each-gene-frequency [] :exac-each-gene-age-bins []}
                                   (get (get-parsed-response) "rows"))))}))
 
-(defn- exac-age-calculator [cb]
+#_(defn- calculate-age-for-whole-exac [cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
@@ -88,6 +104,38 @@
                            {:exac-age-info [] :age-bins []}
                            (get (get-parsed-response) "rows"))))}))
 
+(defn- calculate-exac-group-age [gene-name cb]
+  (u/ajax {:url (str api-url-root "/exec-sql")
+           :method :post
+           :data (u/->json-string
+                  {:sql (str
+                         "select `count(*)` as `exac-age-frequency`,
+                            age_exac as `age-bins` from metadata_age
+                            where age_exac is not NULL"
+                         )
+                   })
+           :on-done
+           (fn [{:keys [get-parsed-response]}]
+           (let [exac-age-frequency-g1 (map (fn [m] (get m "exac-age-frequency"))
+                                            (get (get-parsed-response) "rows"))
+                 exac-bins-g1 (map (fn [m] (get m "age-bins"))
+                                            (get (get-parsed-response) "rows"))]
+             (u/ajax {:url (str api-url-root "/exec-sql")
+                      :method :post
+                      :data (u/->json-string
+                        {:sql (str
+                               "select b as 'each-age-bins', `count(*)` as 'exac-each-gene-age-frequency'"
+                               "from exac_age_gene_summary where gene = ?")
+                         :params (clojure.string/upper-case gene-name)
+                         } )
+                      :on-done
+                      (fn [{:keys [get-parsed-response]}]
+                        (let [each-gene-age-feq-g2 (map (fn [m] (get m "exac-each-gene-age-frequency"))
+                                                         (get (get-parsed-response) "rows"))
+                              each-gene-age-bins-g2 (map (fn [m] (get m "each-age-bins"))
+                                                               (get (get-parsed-response) "rows"))]
+                          (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2))
+                        )})))}))
 
 ;New component for displaying the gene details
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
@@ -99,20 +147,20 @@
        [:div {:style {:backgroundColor "#E9E9E9"}}
         [:div {:style {:paddingTop 30 :display "flex"}}
          [:div {:style {:flex "1 1 50%"}}
-          [:div {:style {:fontSize "180%" :fontWeight 900}}
+          [:div {:style {:fontSize "180%" :fontWeight 900 :padding "50px"}}
            "Gene: " (clojure.string/upper-case gene-name)]]
          [:div {:style {:flex "1 1 50%"}}
           [stats-box/Component (merge {:api-url-root api-url-root}
                                       (select-keys props [:gene-name]))]]]
         [pd/Component (merge {:api-url-root api-url-root} (select-keys props [:gene-name]))]
-        [:div {:ref "plot" :style {:width 600 :height 300}}]
-        (when-not each-gene-age?
-          [:div {:ref "plot2" :style {:width 600 :height 300}}])
-        (when-not each-gene-pop?
-          [:div {:ref "plot3" :style {:width 600 :height 300}}])
-        [:div {:style {:marginTop 50}}
-         [variant-table/Component (merge {:api-url-root api-url-root}
-                                         (select-keys props [:gene-name]))]]]))
+      (when-not each-gene-pop?
+         [:div {:ref "population-plot" :style {:width 600 :height 300 :padding "50px"}}])
+      ;group age plot
+      [:div {:ref "group-plot" :style {:width 600 :height 300 :padding "50px"}}]
+
+      [:div {:style {:marginTop 50}}
+       [variant-table/Component (merge {:api-url-root api-url-root}
+                                       (select-keys props [:gene-name]))]]]))
    :component-did-mount
    (fn [{:keys [this]}]
      (this :render-plots))
@@ -149,45 +197,42 @@
                  (get results :exac_each_gene_population_category)
                  (get results :exac_each_gene_pop_frequency)))
 
-   :build-plot
-   (fn [{:keys [this refs state]} x y]
-     #_(.style (.select (.-d3 js/Plotly) "body") "background-color" "")
-     (-> js/Plotly .-d3 (.select "body") (.style "background-color" ""))
-     (.newPlot js/Plotly (@refs "plot")
-       (clj->js [{:type "bar"
-                  :name "age distributin"
-                  :x x
-                  :y y
-                  }])
-       (clj->js {:margin {:t 10}})))
-
-   :build-each-gene-age-plot
-   (fn [{:keys [this refs state]} x y]
-     (.newPlot js/Plotly (@refs "plot2")
-            (clj->js [{:type "bar"
-                       :title "age distribution"
-                       :x x
-                       :y y}])
-            (clj->js {:margin {:t 10}})))
    :build-each-gene-pop-plot
    (fn [{:keys [this refs state]} x y]
-     (.newPlot js/Plotly (@refs "plot3")
+     (.newPlot js/Plotly (@refs "population-plot")
             (clj->js [{:type "bar"
-                       :name "age distributin"
+                       :name "Population distribution of each gene"
+                       :title "hello"
                        :x y
                        :y x
                        :orientation "h"}])
-            (clj->js {:margin {:t 10}})))
+            (clj->js {:title "Population distribution" :xaxis {:title "Frequency"} :yaxis {:title "Population"}:margin {:t 100 :l 50 :r 50 :b 100} :width 600 :height 400})))
+
+
+   :build-group-ages-plot
+   (fn [{:keys [this refs state]} x1 y1 x2 y2]
+     (.newPlot js/Plotly (@refs "group-plot")
+            (clj->js [{:type "bar"
+                       :name "Age distributiion over Exac"
+                       :color "rgba(204,204,204,1)"
+                       :x y1
+                       :y x1}
+                      {:type "bar"
+                       :name "Age distribution of each gene"
+                       :x y1
+                       :y x2}])
+            (clj->js {:title "Age distribution" :xaxis {:title "Age"} :yaxis {:title "Frequency"} :margin {:t 100 :l 50 :r 50 :b 100} :width 600 :height 400})))
+
    :render-plots
    (fn [{:keys [this props state refs]}]
-     (exac-age-calculator (fn [results]
-                            (react/call :run-age-calculator this results)))
-     (exac-each-gene-age-calculator (:hash props) (fn [results]
-                                                    (react/call :run-each-gene-age-calculator this results)))
      (calculate-population-for-gene
       (get-gene-name-from-window-hash (u/cljslog "hash" (:hash props)))
       (fn [results]
-        (react/call :run-each-gene-pop-calculator this results))))})
+        (react/call :run-each-gene-pop-calculator this results)))
+     (calculate-exac-group-age (get-gene-name-from-window-hash (u/cljslog "hash" (:hash props)))
+      (fn [x1 y1 x2 y2]
+         (react/call :build-group-ages-plot this x1 y1 x2 y2))
+      ))})
 
 
 (defn transform-vector-to-gene-label-map [m]
