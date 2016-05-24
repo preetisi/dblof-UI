@@ -209,11 +209,8 @@
 
 ;component for search box
 (react/defc SearchBoxAndResults
-  {
-    :get-initial-state
-   ;returns str or nil if empty
-   (fn [] (u/cljslog "{:hash (get-window-hash)}" {:hash (get-window-hash)}))
-
+  {:get-initial-state
+   (fn [] {:hash (get-window-hash)})
    :render
    (fn [{:keys [this state refs]}]
      (let [{:keys [hash exac-age-info age-bins]} @state]
