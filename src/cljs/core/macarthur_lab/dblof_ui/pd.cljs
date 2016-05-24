@@ -15,15 +15,18 @@
                   (fn [{:strs [size]}]
                     [:div {:style {:flex (str size " " size " auto") :backgroundColor "#333"}}])
                   (sort-by #(get % "start") data))]
-       [:div {:style {:minHeight "20vh" :position :relative
-                      :backgroundColor (when-not (= code :loaded) "#eee")}}
-        [:div {:style {:height 1 :backgroundColor "#ccc"
-                      :position "absolute" :width "100%" :top "10vh"}}]
-        [:div {:style {:position "absolute" :top "7.5vh" :height "5vh" :width "100%"
-                       :display "flex"}}
-         [:div {:style {:flex "0 0 5px"}}]
-         (interpose [:div {:style {:flex "0 0 10px"}}] exons)
-         [:div {:style {:flex "0 0 5px"}}]]]))
+       [:div {:style {:backgroundColor "white" :padding "20px 16px"}}
+        [:div {:style {:fontWeight "bold"}} "Positional distribution"]
+        [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
+        [:div {:style {:height 100 :position :relative
+                       :backgroundColor (when-not (= code :loaded) "#eee")}}
+         [:div {:style {:height 1 :backgroundColor "#ccc"
+                        :position "absolute" :width "100%" :bottom 30}}]
+         [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
+                        :display "flex"}}
+          [:div {:style {:flex "0 0 5px"}}]
+          (interpose [:div {:style {:flex "0 0 10px"}}] exons)
+          [:div {:style {:flex "0 0 5px"}}]]]]))
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]
      (when-not (apply = (map :gene-name [props next-props]))

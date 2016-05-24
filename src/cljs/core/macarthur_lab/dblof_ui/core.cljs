@@ -114,11 +114,12 @@
        [:div {:style {:backgroundColor "#E9E9E9"}}
         [:div {:style {:paddingTop 30 :display "flex"}}
          [:div {:style {:flex "1 1 50%"}}
-          [:div {:style {:fontSize "180%" :fontWeight 900 :padding "50px"}}
+          [:div {:style {:fontSize "180%" :fontWeight 900}}
            "Gene: " (clojure.string/upper-case gene-name)]]
          [:div {:style {:flex "1 1 50%"}}
           [stats-box/Component (merge {:api-url-root api-url-root}
                                       (select-keys props [:gene-name]))]]]
+        [:div {:style {:height 30}}]
         [pd/Component (merge {:api-url-root api-url-root} (select-keys props [:gene-name]))]
       (when-not each-gene-pop?
          [:div {:ref "population-plot" :style {:width 600 :height 300 :padding "50px"}}])
