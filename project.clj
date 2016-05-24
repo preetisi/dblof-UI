@@ -1,7 +1,6 @@
 (defproject macarthur-lab/dblof-ui "0.0.1"
   :dependencies
   [
-   [cljsjs/markdown "0.6.0-beta1-0"]
    [dmohs/react "1.0.2+15.0.2"]
    [org.clojure/clojure "1.8.0"]
    [org.clojure/clojurescript "1.8.51"]
@@ -33,4 +32,5 @@
                                 :compiler {:output-dir "resources/public/build"
                                            :asset-path "build"
                                            :output-to "resources/public/compiled.js"}}}}
-  :resource {:resource-paths ["src/static" "lib/plotly"] :skip-stencil [#".*"]})
+  :resource {:resource-paths ["src/static" "lib/github-markdown" "lib/plotly"]
+             :skip-stencil [#".*"]})

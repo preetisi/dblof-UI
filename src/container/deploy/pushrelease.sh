@@ -6,6 +6,7 @@ set -euxo pipefail
 VERSION="${1:-not specified}"
 
 if [[ "$VERSION" = "not specified" ]]; then
+  docker pull -a gcr.io/"$PROJECT_ID"/ui
   docker images gcr.io/"$PROJECT_ID"/ui
   echo "Specifiy a new version."
   exit 1
