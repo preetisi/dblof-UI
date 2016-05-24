@@ -1,6 +1,7 @@
 (defproject macarthur-lab/dblof-ui "0.0.1"
   :dependencies
   [
+   [cljsjs/markdown "0.6.0-beta1-0"]
    [dmohs/react "1.0.2+15.0.2"]
    [org.clojure/clojure "1.8.0"]
    [org.clojure/clojurescript "1.8.51"]

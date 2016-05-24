@@ -2,6 +2,7 @@
   (:require
    clojure.string
    [dmohs.react :as react]
+   [macarthur-lab.dblof-ui.gene-info :as gene-info]
    [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.search-area :as search-area]
    [macarthur-lab.dblof-ui.stats-box :as stats-box]
@@ -144,9 +145,11 @@
           "Gene Information"]]
         [:div {:style {:backgroundColor "white"}}
          (if show-gene-info?
-           [:div {} "Gene info"]
+           [gene-info/Component (merge {:api-url-root api-url-root}
+                                       (select-keys props [:gene-name]))]
            [variant-table/Component (merge {:api-url-root api-url-root}
-                                           (select-keys props [:gene-name]))])]]))
+                                           (select-keys props [:gene-name]))])]
+        [:div {:style {:height 50}}]]))
    :component-did-mount
    (fn [{:keys [this]}]
      (this :render-plots))
