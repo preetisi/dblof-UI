@@ -184,7 +184,7 @@
                       :xaxis {:title "Frequency"}
                       :yaxis {:title "Population"}})))
    :build-group-ages-plot
-   (fn [{:keys [this refs state]} x1 y1 x2 y2]
+   (fn [{:keys [this refs state props]} x1 y1 x2 y2]
      (.newPlot js/Plotly (@refs "group-plot")
             (clj->js [{:type "bar"
                        :name "Age distributiion over Exac"
@@ -192,12 +192,13 @@
                        :x y1
                        :y x1}
                       {:type "bar"
-                       :name "Age distribution of each gene"
-                       :x y1
+                       :name  "age distribution for Gene"
+                       :x y2
                        :y x2}])
             (clj->js {:title "Age distribution"
                       :xaxis {:title "Age"}
-                      :yaxis {:title "Frequency"}})))
+                      :yaxis {:showticklabels false}
+                      })))
    :render-plots
    (fn [{:keys [this props state refs]}]
      (calculate-population-for-gene
