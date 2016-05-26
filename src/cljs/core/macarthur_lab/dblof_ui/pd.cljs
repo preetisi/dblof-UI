@@ -24,9 +24,9 @@
                         :position "absolute" :width "100%" :bottom 30}}]
          [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
                         :display "flex"}}
-          [:div {:style {:flex "0 0 5px"}}]
-          (interpose [:div {:style {:flex "0 0 10px"}}] exons)
-          [:div {:style {:flex "0 0 5px"}}]]]]))
+          [:div {:style {:flex "5 5 auto"}}]
+          (interpose [:div {:style {:flex "10 10 auto"}}] exons)
+          [:div {:style {:flex "5 5 auto"}}]]]]))
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]
      (when-not (apply = (map :gene-name [props next-props]))
