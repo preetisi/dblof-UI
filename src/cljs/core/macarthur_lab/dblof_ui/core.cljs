@@ -102,8 +102,6 @@
                                                           (get (get-parsed-response) "rows"))
                                 each-gene-age-bins-g2 (map (fn [m] (get m "each-age-bins"))
                                                            (get (get-parsed-response) "rows"))]
-                            (u/cljslog "xac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2"
-                                       exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2)
                             (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2))
                           )})))}))
 
@@ -204,13 +202,13 @@
    :render-plots
    (fn [{:keys [this props state refs]}]
      (calculate-population-for-gene
-      (get-gene-name-from-window-hash (u/cljslog "hash" (:hash props)))
+      (get-gene-name-from-window-hash (:hash props))
       (fn [results]
         (react/call :run-each-gene-pop-calculator this results)))
-     (calculate-exac-group-age (get-gene-name-from-window-hash (u/cljslog "hash" (:hash props)))
+     (calculate-exac-group-age
+      (get-gene-name-from-window-hash (:hash props))
       (fn [x1 y1 x2 y2]
-         (react/call :build-group-ages-plot this x1 y1 x2 y2))
-      ))})
+        (react/call :build-group-ages-plot this x1 y1 x2 y2))))})
 
 
 (defn transform-vector-to-gene-label-map [m]
