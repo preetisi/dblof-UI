@@ -59,9 +59,7 @@
            :method :post
            :data (u/->json-string
                   {:sql (str
-                         "select pop as 'each-gene-population',"
-                         "pop_frequency as 'each-gene-population-frequency'"
-                         "from exac_pop_gene_summary where gene = ? and pop is not NULL")
+                         "select pop as 'each-gene-population', normalised_pop_freq as 'each-gene-population-frequency' from exac_population_summary_noarmalised where gene = ? and pop is not NULL order by pop")
                    :params (clojure.string/upper-case gene-name)})
            :on-done (fn [{:keys [get-parsed-response]}]
                       (cb (reduce (fn [r, m]
@@ -104,7 +102,8 @@
                                                            (get (get-parsed-response) "rows"))]
                             (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2))
                           )})))}))
-
+;normalised pop Frequency
+;select pop as 'each-gene-population', normalised_pop_freq as 'each-gene-population-frequency' from exac_population_summary_noarmalised where gene = "ABCA7" and pop is not NULL
 ;New component for displaying the gene details
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
@@ -126,7 +125,7 @@
         [:div {:style {:display "flex" :justifyContent "space-between"}}
          ;; group age plot
          [:div {:ref "group-plot" :style {:flex "0 0 48%" :height 300}}]
-         [:div {:ref "population-plot" :style {:flex "0 0 48%" :height 300}}]]
+         [:div {:ref "population-plot" :padding "20px" :style {:flex "0 0 48%" :height 300}}]]
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex"}}
          [:div {:style {:flex "0 0 50%"
@@ -180,8 +179,18 @@
                        :y x
                        :orientation "h"}])
             (clj->js {:title "Population distribution"
-                      :xaxis {:title "Frequency" :titlefont {:color "black" :family "Arial"}}
-                      :yaxis {:title "Population" :titlefont {:color "black" :family "Arial"}}})))
+                      :xaxis { :autorange true
+                               :showgrid false
+                               :zeroline false
+                               :showline false
+                              :title "Frequency" :titlefont {:color "black" :family "Arial"}}
+                      :yaxis {:autorange true
+                               :showgrid false
+                               :zeroline false
+                               :showline false
+                               :title "Population" :titlefont {:color "black" :family "Arial"}
+                               :autotick false }
+                      })))
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2]
      (.newPlot js/Plotly (@refs "group-plot")
@@ -194,10 +203,20 @@
                        :name  "age distribution for Gene"
                        :x y2
                        :y x2}])
-            (clj->js {:title "Age distribution"
-                      :xaxis {:title "Age" :titlefont {:size 14 :color "black" :family "Arial"}}
-                      :yaxis {:title "Frequency" :showticklabels false}
+            (clj->js {:title "Age distribution" :titlefont {:size 18 :color "black" :family "Arial"}
+                      :xaxis {:autorange true
+                               :showgrid false
+                               :zeroline false
+                               :showline false
+                               :title "Age" :titlefont {:size 14 :color "black" :family "Arial"}}
+                      :yaxis {:autorange true
+                               :showgrid false
+                               :zeroline false
+                               :showline false
+                               :title "Frequency" :showticklabels false}
                       :legend {:x 0 :y 1.35 :bgcolor "rgba(255, 255, 255, 0)"}
+
+
                       })))
    :render-plots
    (fn [{:keys [this props state refs]}]
