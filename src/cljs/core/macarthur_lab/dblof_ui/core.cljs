@@ -178,13 +178,12 @@
      (.newPlot js/Plotly (@refs "population-plot")
             (clj->js [{:type "bar"
                        :name "Population distribution of each gene"
-                       :title "hello"
                        :x y
                        :y x
                        :orientation "h"}])
             (clj->js {:title "Population distribution"
-                      :xaxis {:title "Frequency"}
-                      :yaxis {:title "Population"}})))
+                      :xaxis {:title "Frequency" :titlefont {:color "black" :family "Arial"}}
+                      :yaxis {:title "Population" :titlefont {:color "black" :family "Arial"}}})))
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2]
      (.newPlot js/Plotly (@refs "group-plot")
@@ -198,8 +197,9 @@
                        :x y2
                        :y x2}])
             (clj->js {:title "Age distribution"
-                      :xaxis {:title "Age"}
-                      :yaxis {:showticklabels true}
+                      :xaxis {:title "Age" :titlefont {:size 14 :color "black" :family "Arial"}}
+                      :yaxis {:title "Frequency" :showticklabels false}
+                      :legend {:x 0 :y 1.35 :bgcolor "rgba(255, 255, 255, 0)"}
                       })))
    :render-plots
    (fn [{:keys [this props state refs]}]
