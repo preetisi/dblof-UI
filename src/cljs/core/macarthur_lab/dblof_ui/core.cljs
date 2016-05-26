@@ -181,13 +181,9 @@
             (clj->js {:title "Population distribution"
                       :xaxis { :autorange true
                                :showgrid false
-                               :zeroline false
-                               :showline false
                               :title "Frequency" :titlefont {:color "black" :family "Arial"}}
                       :yaxis {:autorange true
                                :showgrid false
-                               :zeroline false
-                               :showline false
                                :title "Population" :titlefont {:color "black" :family "Arial"}
                                :autotick false }
                       })))
@@ -206,13 +202,9 @@
             (clj->js {:title "Age distribution" :titlefont {:size 18 :color "black" :family "Arial"}
                       :xaxis {:autorange true
                                :showgrid false
-                               :zeroline false
-                               :showline false
                                :title "Age" :titlefont {:size 14 :color "black" :family "Arial"}}
                       :yaxis {:autorange true
                                :showgrid false
-                               :zeroline false
-                               :showline false
                                :title "Frequency" :showticklabels false}
                       :legend {:x 0 :y 1.35 :bgcolor "rgba(255, 255, 255, 0)"}
 
