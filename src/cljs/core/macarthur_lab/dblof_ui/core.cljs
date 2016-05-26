@@ -183,7 +183,7 @@
                        :orientation "h"
                        :marker {:color [ "#47cccc" "#E38A4F"
                                         "#D42473" "#961CB8"
-                                        "#3EB348" "#CFC934"
+                                        "#CFC934" "47cccc"
                                         "#2252D6"]}}])
             (clj->js {:title "Population distribution"
                       :xaxis { :autorange true
@@ -200,9 +200,9 @@
      (.newPlot js/Plotly (@refs "group-plot")
             (clj->js [{:type "bar"
                        :name "Age distributiion over Exac"
-                       :color "rgba(204,204,204,1)"
                        :x y1
-                       :y x1}
+                       :y x1
+                       :marker {:color "47cccc"}}
                       {:type "bar"
                        :name  "age distribution for Gene"
                        :x y2
