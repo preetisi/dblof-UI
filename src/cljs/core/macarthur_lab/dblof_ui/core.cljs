@@ -71,39 +71,41 @@
                                   {:exac_each_gene_pop_frequency [] :exac_each_gene_population_category []}
                                   (get (get-parsed-response) "rows"))))}))
 
-
 (defn- calculate-exac-group-age [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
                   {:sql (str
-                         "select `count(*)` as `exac-age-frequency`,
-                            age_exac as `age-bins` from metadata_age
-                            where age_exac is not NULL"
+                         "select exacagebins as `age-bins`,
+                          exacagefreq as `exac-age-frequency`
+                          from metadata_age_normalized"
                          )
                    })
            :on-done
            (fn [{:keys [get-parsed-response]}]
-           (let [exac-age-frequency-g1 (map (fn [m] (get m "exac-age-frequency"))
-                                            (get (get-parsed-response) "rows"))
-                 exac-bins-g1 (map (fn [m] (get m "age-bins"))
-                                            (get (get-parsed-response) "rows"))]
-             (u/ajax {:url (str api-url-root "/exec-sql")
-                      :method :post
-                      :data (u/->json-string
-                        {:sql (str
-                               "select b as 'each-age-bins', `count(*)` as 'exac-each-gene-age-frequency'"
-                               "from exac_age_gene_summary where gene = ?")
-                         :params (clojure.string/upper-case gene-name)
-                         } )
-                      :on-done
-                      (fn [{:keys [get-parsed-response]}]
-                        (let [each-gene-age-feq-g2 (map (fn [m] (get m "exac-each-gene-age-frequency"))
-                                                         (get (get-parsed-response) "rows"))
-                              each-gene-age-bins-g2 (map (fn [m] (get m "each-age-bins"))
-                                                               (get (get-parsed-response) "rows"))]
-                          (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2))
-                        )})))}))
+             (let [exac-age-frequency-g1 (map (fn [m] (get m "exac-age-frequency"))
+                                              (get (get-parsed-response) "rows"))
+                   exac-bins-g1 (map (fn [m] (get m "age-bins"))
+                                     (get (get-parsed-response) "rows"))]
+               (u/ajax {:url (str api-url-root "/exec-sql")
+                        :method :post
+                        :data (u/->json-string
+                               {:sql (str
+                                      "select agebins as 'each-age-bins',
+                                       `af.agefreq/af_sums.s` as 'exac-each-gene-age-frequency'
+                                        from exac_gene_age_summary_normalized where gene =?")
+                                :params (clojure.string/upper-case gene-name)
+                                } )
+                        :on-done
+                        (fn [{:keys [get-parsed-response]}]
+                          (let [each-gene-age-feq-g2 (map (fn [m] (get m "exac-each-gene-age-frequency"))
+                                                          (get (get-parsed-response) "rows"))
+                                each-gene-age-bins-g2 (map (fn [m] (get m "each-age-bins"))
+                                                           (get (get-parsed-response) "rows"))]
+                            (u/cljslog "xac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2"
+                                       exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2)
+                            (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2))
+                          )})))}))
 
 ;New component for displaying the gene details
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
@@ -197,7 +199,7 @@
                        :y x2}])
             (clj->js {:title "Age distribution"
                       :xaxis {:title "Age"}
-                      :yaxis {:showticklabels false}
+                      :yaxis {:showticklabels true}
                       })))
    :render-plots
    (fn [{:keys [this props state refs]}]
