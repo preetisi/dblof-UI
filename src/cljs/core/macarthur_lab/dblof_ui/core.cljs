@@ -180,7 +180,11 @@
                        :name "Population distribution of each gene"
                        :x y
                        :y x
-                       :orientation "h"}])
+                       :orientation "h"
+                       :marker {:color [ "#47cccc" "#E38A4F"
+                                        "#D42473" "#961CB8"
+                                        "#3EB348" "#CFC934"
+                                        "#2252D6"]}}])
             (clj->js {:title "Population distribution"
                       :xaxis { :autorange true
                                :showgrid false
@@ -190,6 +194,7 @@
                                :title "Population" :titlefont {:color "black" :family "Arial"}
                                :autotick false }
                       })))
+   ;#47cccc - sea green #E38A4F - orange; D42473 pink ; 961CB8 purple
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2]
      (.newPlot js/Plotly (@refs "group-plot")
