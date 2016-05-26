@@ -23,7 +23,7 @@
    :render
    (fn [{:keys [props state]}]
      (let [{:keys [variants sort-column-key]} @state]
-       [:div {:style {:paddingTop 50 :fontSize "80%"}}
+       [:div {:style {:paddingTop 10 :fontSize "80%"}}
         [:div {:style {:display "flex" :alignItems "center" :fontWeight "bold"}}
          (map (fn [col]
                 [:div {:style {:flex (str "0 0 " (:width col)) :padding 10 :boxSizing "border-box"
