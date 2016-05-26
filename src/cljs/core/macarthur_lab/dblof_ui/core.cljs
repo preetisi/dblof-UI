@@ -59,7 +59,10 @@
            :method :post
            :data (u/->json-string
                   {:sql (str
-                         "select pop as 'each-gene-population', normalised_pop_freq as 'each-gene-population-frequency' from exac_population_summary_noarmalised where gene = ? and pop is not NULL order by pop")
+                         "select pop as 'each-gene-population',
+                          normalised_pop_freq as 'each-gene-population-frequency'
+                          from exac_population_summary_noarmalised where gene = ?
+                          and pop is not NULL order by pop desc")
                    :params (clojure.string/upper-case gene-name)})
            :on-done (fn [{:keys [get-parsed-response]}]
                       (cb (reduce (fn [r, m]
