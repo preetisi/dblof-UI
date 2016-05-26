@@ -16,6 +16,18 @@
               {:key :allele_freq :label "Allele Frequency" :width "20%" :format #(.toFixed % 8)}])
 
 
+(defn- create-variants-query [gene-id]
+  {:genes {:$in [gene-id]}
+   :vep_annotations
+   {:$elemMatch
+    {:Gene gene-id
+     :LoF {:$ne ""}}}})
+
+
+(def variants-projection
+  (reduce (fn [r col] (assoc r (:key col) 1)) {:vep_annotations 1} columns))
+
+
 (react/defc Component
   {:get-initial-state
    (fn []
@@ -71,11 +83,8 @@
                              :method :post
                              :data (u/->json-string
                                     {:collection-name "variants"
-                                     :query {:genes {:$in [gene-id]}}
-                                     :projection (reduce
-                                                  (fn [r col] (assoc r (:key col) 1))
-                                                  {}
-                                                  columns)
+                                     :query (create-variants-query gene-id)
+                                     :projection variants-projection
                                      :options {:limit 10000}})
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
