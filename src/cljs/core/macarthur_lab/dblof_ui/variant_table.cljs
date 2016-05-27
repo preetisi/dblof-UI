@@ -18,6 +18,7 @@
 
 (defn- create-variants-query [gene-id]
   {:genes {:$in [gene-id]}
+   :filter "PASS"
    :vep_annotations
    {:$elemMatch
     {:Gene gene-id
