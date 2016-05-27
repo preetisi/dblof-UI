@@ -127,8 +127,11 @@
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex" :justifyContent "space-between"}}
          ;; group age plot
-         [:div {:ref "group-plot" :style {:flex "0 0 48%" :height 300}}]
-         [:div {:ref "population-plot" :padding "20px" :style {:flex "0 0 48%" :height 300}}]]
+         [:div {:ref "group-plot" :style {:flex "1 1 50%" :height 300}}]
+         [:div {:style {:flex "1 1 30px"}}]
+         [:div {:style {:flex "1 1 50%"}}
+          [:div {:style {:paddingLeft 70 :backgroundColor "white"}}
+           [:div {:ref "population-plot" :style {:height 300}}]]]]
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex"}}
          [:div {:style {:flex "0 0 50%"
@@ -188,11 +191,11 @@
             (clj->js {:title "Population distribution"
                       :xaxis { :autorange true
                                :showgrid false
-                              :title "Frequency" :titlefont {:color "black" :family "Arial"}}
-                      :yaxis {:autorange true
+                              :title "Frequency" :titlefont {:family "Arial"}}
+                      :yaxis { :autorange true
                                :showgrid false
-                               :title "Population" :titlefont {:color "black" :family "Arial"}
-                               :autotick false }
+                               :autotick false
+                                }
                       })))
    ;#47cccc - sea green #E38A4F - orange; D42473 pink ; 961CB8 purple
    :build-group-ages-plot
