@@ -54,7 +54,7 @@
                       (let [gene-info (first (get (get-parsed-response) "rows"))]
                         (cb gene-info)))}))
 
-(defn- calculate-population-for-gene [gene-name cb]
+#_(defn- calculate-population-for-gene [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
@@ -71,6 +71,38 @@
                                         (update-in [:exac_each_gene_population_category] conj (get m "each-gene-population"))))
                                   {:exac_each_gene_pop_frequency [] :exac_each_gene_population_category []}
                                   (get (get-parsed-response) "rows"))))}))
+
+(def default-map1
+  {"South Asian" 0
+   "Others" 0
+   "Non-Finnish European" 0
+   "Finnish" 0
+   "East Asian" 0
+   "American" 0
+   "African" 0})
+
+(defn- calculate-population-for-gene [gene-name cb]
+  (u/ajax {:url (str api-url-root "/exec-sql")
+           :method :post
+           :data (u/->json-string
+                  {:sql (str
+                         "select pop as 'each-gene-population',
+                          normalised_pop_freq as 'each-gene-population-frequency'
+                          from exac_population_summary_noarmalised where gene = ?
+                          and pop is not NULL order by pop desc")
+                   :params (clojure.string/upper-case gene-name)})
+           :on-done (fn [{:keys [get-parsed-response]}]
+             (let [key-vector (map (fn [m] (get m "each-gene-population"))
+                                             (get (get-parsed-response) "rows"))
+                  value-vector (map (fn [m] (get m "each-gene-population-frequency"))
+                                              (get (get-parsed-response) "rows")
+                  )]
+               (let [exac_each_gene_pop_frequency (keys (merge default-map1 (zipmap key-vector value-vector)))
+                               exac_each_gene_population_category (vals (merge default-map1 (zipmap key-vector value-vector)))]
+                          #_(u/cljslog exac_each_gene_pop_frequency exac_each_gene_population_category)
+               (cb exac_each_gene_pop_frequency exac_each_gene_population_category))))}))
+
+
 
 (defn- calculate-exac-group-age [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
@@ -158,56 +190,41 @@
    :component-did-mount
    (fn [{:keys [this]}]
      (this :render-plots))
+   
    :component-will-receive-props
    (fn [{:keys [this after-update]}]
      (after-update #(this :render-plots)))
-   :run-age-calculator
-   (fn [{:keys [this state refs]} results]
-     (swap! state assoc :age-bins (get results :age-bins))
-     (swap! state assoc :exac-age-info (get results :exac-age-info))
-     (react/call :build-plot this (get results :age-bins) (get results :exac-age-info)))
-   :run-each-gene-pop-calculator
-   (fn [{:keys [this state refs]} results]
-     (let [pop_frequency (get results :exac_each_gene_pop_frequency)]
-     (swap! state assoc :exac_each_gene_population_category (get results :exac_each_gene_population_category)
-                        :exac_each_gene_pop_frequency pop_frequency
-                        :each-gene-pop? (empty? pop_frequency)))
 
-     (react/call :build-each-gene-pop-plot this
-                 (get results :exac_each_gene_population_category)
-                 (get results :exac_each_gene_pop_frequency)))
    :build-each-gene-pop-plot
-   (fn [{:keys [this refs state]} x y]
+   (fn [{:keys [this refs state props]} x y]
      (.newPlot js/Plotly (@refs "population-plot")
             (clj->js [{:type "bar"
                        :name "Population distribution of each gene"
                        :x y
                        :y x
                        :orientation "h"
-                       :marker {:color [ "#47cccc" "#E38A4F"
+                       :marker {:color ["#47cccc" "#E38A4F"
                                         "#D42473" "#961CB8"
                                         "#CFC934" "47cccc"
                                         "#2252D6"]}}])
             (clj->js {:title "Population distribution"
-                      :xaxis { :autorange true
-                               :showgrid false
+                      :xaxis {:autorange true
+                              :showgrid false
                               :title "Frequency" :titlefont {:family "Arial"}}
-                      :yaxis { :autorange true
-                               :showgrid false
-                               :autotick false
-                                }
-                      })))
+                      :yaxis {:autorange true
+                              :showgrid false
+                              :autotick false}})))
    ;#47cccc - sea green #E38A4F - orange; D42473 pink ; 961CB8 purple
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2]
      (.newPlot js/Plotly (@refs "group-plot")
             (clj->js [{:type "bar"
-                       :name "Age distributiion over Exac"
+                       :name "Age distributiion over ExAc"
                        :x y1
                        :y x1
                        :marker {:color "47cccc"}}
                       {:type "bar"
-                       :name  "age distribution for Gene"
+                       :name  "Age distribution for Gene"
                        :x y2
                        :y x2}])
             (clj->js {:title "Age distribution" :titlefont {:size 18 :color "black" :family "Arial"}
@@ -223,10 +240,11 @@
                       })))
    :render-plots
    (fn [{:keys [this props state refs]}]
+
      (calculate-population-for-gene
       (get-gene-name-from-window-hash (:hash props))
-      (fn [results]
-        (react/call :run-each-gene-pop-calculator this results)))
+      (fn [x y]
+        (react/call :build-each-gene-pop-plot this x y)))
      (calculate-exac-group-age
       (get-gene-name-from-window-hash (:hash props))
       (fn [x1 y1 x2 y2]
