@@ -114,9 +114,9 @@
         (when-not compact?
           [:div {:style {:marginTop "1em" :fontStyle "italic" :fontSize "small"}}
            "Examples - Gene: "
-           [:a {:href "#genes/pcsk9"
+           [:a {:href "#genes/cd33"
                 :style {:color "#CEF4F3" :textDecoration "none" :fontStyle "normal"}}
-            "PCSK9"]])]))
+            "CD33"]])]))
    :component-did-mount
    (fn [{:keys [props state locals]}]
      (u/ajax {:url (str (:api-url-root props) "/exec-sql")
