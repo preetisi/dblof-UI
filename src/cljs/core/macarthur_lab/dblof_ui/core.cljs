@@ -37,41 +37,6 @@
   (let [value (.. js/window -location -hash)]
     (when-not (clojure.string/blank? value) value)))
 
-(defn- calculate-score [window-hash cb]
-  (u/ajax {:url (str api-url-root "/exec-sql")
-           :method :post
-           :data (u/->json-string
-                   {:sql (str
-                           " select"
-                           " (select (n_lof / exp_lof) * 100 from constraint_scores"
-                           " where gene = ?) as lof_ratio,"
-                           " (select sum(ac_hom) from variant_annotation"
-                           " where symbol = ?) as n_homozygotes,"
-                           " (select sum(ac_adj / an_adj) from variant_annotation"
-                           " where symbol = ?) as cumulative_af;")
-                    :params (repeat 3 (get-gene-name-from-window-hash window-hash))})
-           :on-done (fn [{:keys [get-parsed-response]}]
-                      (let [gene-info (first (get (get-parsed-response) "rows"))]
-                        (cb gene-info)))}))
-
-#_(defn- calculate-population-for-gene [gene-name cb]
-  (u/ajax {:url (str api-url-root "/exec-sql")
-           :method :post
-           :data (u/->json-string
-                  {:sql (str
-                         "select pop as 'each-gene-population',
-                          normalised_pop_freq as 'each-gene-population-frequency'
-                          from exac_population_summary_noarmalised where gene = ?
-                          and pop is not NULL order by pop desc")
-                   :params (clojure.string/upper-case gene-name)})
-           :on-done (fn [{:keys [get-parsed-response]}]
-                      (cb (reduce (fn [r, m]
-                                    (-> r
-                                        (update-in [:exac_each_gene_pop_frequency] conj (get m "each-gene-population-frequency"))
-                                        (update-in [:exac_each_gene_population_category] conj (get m "each-gene-population"))))
-                                  {:exac_each_gene_pop_frequency [] :exac_each_gene_population_category []}
-                                  (get (get-parsed-response) "rows"))))}))
-
 (def default-map1
   {"South Asian" 0
    "Others" 0
@@ -99,7 +64,6 @@
                   )]
                (let [exac_each_gene_pop_frequency (keys (merge default-map1 (zipmap key-vector value-vector)))
                                exac_each_gene_population_category (vals (merge default-map1 (zipmap key-vector value-vector)))]
-                          #_(u/cljslog exac_each_gene_pop_frequency exac_each_gene_population_category)
                (cb exac_each_gene_pop_frequency exac_each_gene_population_category))))}))
 
 
@@ -109,9 +73,7 @@
            :method :post
            :data (u/->json-string
                   {:sql (str
-                         "select exacagebins as `age-bins`,
-                          exacagefreq as `exac-age-frequency`
-                          from metadata_age_normalized"
+                         "select `age-bins`, `exac-age-frequency` from trunctated_norm_age"
                          )
                    })
            :on-done
@@ -126,7 +88,7 @@
                                {:sql (str
                                       "select agebins as 'each-age-bins',
                                        `af.agefreq/af_sums.s` as 'exac-each-gene-age-frequency'
-                                        from exac_gene_age_summary_normalized where gene =?")
+                                        from truncated_norm_age_each_gene where gene =?")
                                 :params (clojure.string/upper-case gene-name)
                                 } )
                         :on-done
@@ -137,9 +99,7 @@
                                                            (get (get-parsed-response) "rows"))]
                             (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2))
                           )})))}))
-;normalised pop Frequency
-;select pop as 'each-gene-population', normalised_pop_freq as 'each-gene-population-frequency' from exac_population_summary_noarmalised where gene = "ABCA7" and pop is not NULL
-;New component for displaying the gene details
+
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
   {:render
@@ -190,14 +150,17 @@
    :component-did-mount
    (fn [{:keys [this]}]
      (this :render-plots))
-   
+
    :component-will-receive-props
    (fn [{:keys [this after-update]}]
      (after-update #(this :render-plots)))
 
    :build-each-gene-pop-plot
    (fn [{:keys [this refs state props]} x y]
+   (u/cljslog "x" x)
+     (u/cljslog "y" y)
      (.newPlot js/Plotly (@refs "population-plot")
+
             (clj->js [{:type "bar"
                        :name "Population distribution of each gene"
                        :x y
@@ -267,9 +230,7 @@
         [search-area/Component {:api-url-root api-url-root :compact? hash}]
         (when hash
           [GeneInfo {:hash hash :gene-name (get-gene-name-from-window-hash hash)}])]))
-    ;so there should be one more component-did-mount where you do the ajax call(using gene-details-handler function
-    ; and swap the state of gene-details
-    ;(swap! state assoc :gene-info {:lof-ratio lof-ratio})
+
    :component-did-mount
    (fn [{:keys [state locals]}]
      (let [hash-change-listener (fn [e]
@@ -279,10 +240,10 @@
                                       (swap! state dissoc :hash))))]
        (swap! locals assoc :hash-change-listener hash-change-listener)
        (.addEventListener js/window "hashchange" hash-change-listener)))
-   ;remove the event listener
+
    :component-will-unmount
    (fn [{:keys [locals]}]
-     ;locals is a atom that contains a map
+
      (.removeEventListener js/window "hashchange" (get @locals :hash-change-listener)))})
 
 
