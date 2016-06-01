@@ -100,6 +100,20 @@
                             (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2 gene-name))
                           )})))}))
 
+
+(defn- create-variants-query [gene-id]
+  {:genes {:$in [gene-id]}
+   :filter "PASS"
+   :vep_annotations
+   {:$elemMatch
+    {:Gene gene-id
+     :LoF {:$ne ""}}}})
+
+
+(def variants-projection
+  (reduce (fn [r col] (assoc r (:key col) 1)) {:vep_annotations 1} variant-table/columns))
+
+
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
   {:render
@@ -115,7 +129,9 @@
           [stats-box/Component (merge {:api-url-root api-url-root}
                                       (select-keys props [:gene-name]))]]]
         [:div {:style {:height 30}}]
-        [pd/Component (merge {:api-url-root api-url-root} (select-keys props [:gene-name]))]
+        [pd/Component (merge {:api-url-root api-url-root}
+                             (select-keys props [:gene-name])
+                             (select-keys @state [:variants]))]
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex" :justifyContent "space-between"}}
          ;; group age plot
@@ -145,16 +161,18 @@
            [gene-info/Component (merge {:api-url-root api-url-root}
                                        (select-keys props [:gene-name]))]
            [variant-table/Component (merge {:api-url-root api-url-root}
-                                           (select-keys props [:gene-name]))])]
+                                           (select-keys props [:gene-name])
+                                           (select-keys @state [:variants]))])]
         [:div {:style {:height 50}}]]))
    :component-did-mount
-   (fn [{:keys [this]}]
-     (this :render-plots))
-
+   (fn [{:keys [this props]}]
+     (this :render-plots)
+     (this :load-variants-data (:gene-name props)))
    :component-will-receive-props
-   (fn [{:keys [this after-update]}]
-     (after-update #(this :render-plots)))
-
+   (fn [{:keys [this props state next-props]}]
+     (when-not (apply = (map :gene-name [props next-props]))
+       (this :render-plots)
+       (this :load-variants-data (:gene-name next-props))))
    :build-each-gene-pop-plot
    (fn [{:keys [this refs state props]} x y]
    (u/cljslog "x" x)
@@ -203,7 +221,6 @@
                       })))
    :render-plots
    (fn [{:keys [this props state refs]}]
-
      (calculate-population-for-gene
       (get-gene-name-from-window-hash (:hash props))
       (fn [x y]
@@ -211,7 +228,30 @@
      (calculate-exac-group-age
       (get-gene-name-from-window-hash (:hash props))
       (fn [x1 y1 x2 y2 gene-name]
-        (react/call :build-group-ages-plot this x1 y1 x2 y2 (get-gene-name-from-window-hash (:hash props))))))})
+        (react/call :build-group-ages-plot this x1 y1 x2 y2 (get-gene-name-from-window-hash (:hash props))))))
+   :load-variants-data
+   (fn [{:keys [props state]} gene-name]
+     (let [exec-mongo-url (str api-url-root "/exec-mongo")
+           gene-name-uc (clojure.string/upper-case gene-name)]
+       (u/ajax {:url exec-mongo-url
+                :method :post
+                :data (u/->json-string
+                       {:collection-name "genes"
+                        :query {:gene_name_upper {:$eq gene-name-uc}}
+                        :projection {:gene_id 1}})
+                :on-done
+                (fn [{:keys [get-parsed-response]}]
+                  (let [gene-id (get-in (get-parsed-response) [0 "gene_id"])]
+                    (u/ajax {:url exec-mongo-url
+                             :method :post
+                             :data (u/->json-string
+                                    {:collection-name "variants"
+                                     :query (create-variants-query gene-id)
+                                     :projection variants-projection
+                                     :options {:limit 10000}})
+                             :on-done
+                             (fn [{:keys [get-parsed-response]}]
+                               (swap! state assoc :variants (get-parsed-response)))})))})))})
 
 
 (defn transform-vector-to-gene-label-map [m]
