@@ -44,9 +44,9 @@
                             " (select (n_lof / exp_lof) * 100 from constraint_scores"
                             " where gene = ?) as `lof-ratio`,"
                             " (select sum(ac_hom) from variant_annotation"
-                            " where symbol = ?) as `homozygotes-count`,"
+                            " where symbol = ? and lof = 'HC') as `homozygotes-count`,"
                             " (select sum(ac_adj / an_adj) from variant_annotation"
-                            " where symbol = ?) as `cumulative-af`;")
+                            " where symbol = ? and lof = 'HC') as `cumulative-af`;")
                       :params (repeat 3 gene-name)})
               :on-done (fn [{:keys [get-parsed-response]}]
                          (let [gene-info (first (get (get-parsed-response) "rows"))]
