@@ -23,6 +23,7 @@
 
 (defn- create-variants-query [gene-id]
   {:genes {:$in [gene-id]}
+   :filter "PASS"
    :vep_annotations
    {:$elemMatch
     {:Gene gene-id
@@ -36,19 +37,23 @@
 (react/defc Component
   {:get-initial-state
    (fn []
-     {:sort-column-key :variant_id})
+     {:sort-column-key :variant_id
+      :sort-reversed? true})
    :render
    (fn [{:keys [props state]}]
-     (let [{:keys [variants sort-column-key]} @state]
+     (let [{:keys [variants sort-column-key sort-reversed?]} @state]
        [:div {:style {:paddingTop 10 :fontSize "80%"}}
         [:div {:style {:display "flex" :alignItems "center" :fontWeight "bold"}}
          (map (fn [col]
                 [:div {:style {:flex (str "0 0 " (:width col)) :padding 10 :boxSizing "border-box"
                                :cursor "pointer"}
-                       :onClick #(swap! state assoc :sort-column-key (:key col))}
+                       :onClick #(swap! state assoc
+                                        :sort-column-key (:key col)
+                                        :sort-reversed? (not sort-reversed?))}
                  (:label col)
                  (when (= (:key col) sort-column-key)
-                   [:span {:style {:marginLeft 6 :fontSize "50%"}} "▼"])])
+                   [:span {:style {:marginLeft 6 :fontSize "50%"}}
+                    (if sort-reversed? "▲" "▼")])])
               columns)]
         [:div {:style {:backgroundColor "#D2D4D8" :height 2 :margin "0 10px"}}]
         [:div {}
