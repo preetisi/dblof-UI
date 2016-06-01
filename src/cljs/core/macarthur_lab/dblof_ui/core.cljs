@@ -186,7 +186,9 @@
                        :marker {:color ["#FF9912" "#ABB9B9"
                                         "#6AA5CD" "#002F6C"
                                         "#108C44" "ED1E24"
-                                        "#941494"]}}])
+                                        "#941494"]}
+
+                      }])
             (clj->js {:title "Population distribution"
                       :xaxis {:autorange true
                               :showgrid false
