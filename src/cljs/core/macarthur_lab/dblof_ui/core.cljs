@@ -165,10 +165,10 @@
                        :x y
                        :y x
                        :orientation "h"
-                       :marker {:color ["#47cccc" "#E38A4F"
-                                        "#D42473" "#961CB8"
-                                        "#CFC934" "47cccc"
-                                        "#2252D6"]}}])
+                       :marker {:color ["#FF9912" "#ABB9B9"
+                                        "#6AA5CD" "#ABB9B9"
+                                        "#108C44" "ED1E24"
+                                        "#941494"]}}])
             (clj->js {:title "Population distribution"
                       :xaxis {:autorange true
                               :showgrid false
@@ -177,6 +177,9 @@
                               :showgrid false
                               :autotick false}
                       })))
+   ;"South Asian"  "Others" "Non-Finnish European" "Finnish" "East Asian" "American" "African"
+
+
    ;#47cccc - sea green #E38A4F - orange; D42473 pink ; 961CB8 purple
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
