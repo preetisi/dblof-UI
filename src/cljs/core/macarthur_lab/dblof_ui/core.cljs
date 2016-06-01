@@ -90,14 +90,14 @@
                                        `af.agefreq/af_sums.s` as 'exac-each-gene-age-frequency'
                                         from truncated_norm_age_each_gene where gene =?")
                                 :params (clojure.string/upper-case gene-name)
-                                } )
+                                })
                         :on-done
                         (fn [{:keys [get-parsed-response]}]
                           (let [each-gene-age-feq-g2 (map (fn [m] (get m "exac-each-gene-age-frequency"))
                                                           (get (get-parsed-response) "rows"))
                                 each-gene-age-bins-g2 (map (fn [m] (get m "each-age-bins"))
                                                            (get (get-parsed-response) "rows"))]
-                            (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2))
+                            (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2 gene-name))
                           )})))}))
 
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
@@ -160,7 +160,6 @@
    (u/cljslog "x" x)
      (u/cljslog "y" y)
      (.newPlot js/Plotly (@refs "population-plot")
-
             (clj->js [{:type "bar"
                        :name "Population distribution of each gene"
                        :x y
@@ -176,21 +175,22 @@
                               :title "Frequency" :titlefont {:family "Arial"}}
                       :yaxis {:autorange true
                               :showgrid false
-                              :autotick false}})))
+                              :autotick false}
+                      })))
    ;#47cccc - sea green #E38A4F - orange; D42473 pink ; 961CB8 purple
    :build-group-ages-plot
-   (fn [{:keys [this refs state props]} x1 y1 x2 y2]
+   (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
      (.newPlot js/Plotly (@refs "group-plot")
             (clj->js [{:type "bar"
-                       :name "Age distributiion over ExAc"
+                       :name "All ExAC individuals"
                        :x y1
                        :y x1
                        :marker {:color "47cccc"}}
                       {:type "bar"
-                       :name  "Age distribution for Gene"
+                       :name  (str "LoF carriers in " (clojure.string/upper-case gene-name) )
                        :x y2
                        :y x2}])
-            (clj->js {:title "Age distribution" :titlefont {:size 18 :color "black" :family "Arial"}
+            (clj->js {
                       :xaxis {:autorange true
                                :showgrid false
                                :title "Age" :titlefont {:size 14 :color "black" :family "Arial"}}
@@ -210,8 +210,8 @@
         (react/call :build-each-gene-pop-plot this x y)))
      (calculate-exac-group-age
       (get-gene-name-from-window-hash (:hash props))
-      (fn [x1 y1 x2 y2]
-        (react/call :build-group-ages-plot this x1 y1 x2 y2))))})
+      (fn [x1 y1 x2 y2 gene-name]
+        (react/call :build-group-ages-plot this x1 y1 x2 y2 (get-gene-name-from-window-hash (:hash props))))))})
 
 
 (defn transform-vector-to-gene-label-map [m]
