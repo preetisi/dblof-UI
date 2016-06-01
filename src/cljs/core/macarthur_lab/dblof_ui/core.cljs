@@ -260,17 +260,48 @@
 
 
 ;component for search box
-(react/defc SearchBoxAndResults
+(react/defc App
   {:get-initial-state
    (fn [] {:hash (get-window-hash)})
    :render
    (fn [{:keys [this state refs]}]
-     (let [{:keys [hash exac-age-info age-bins]} @state]
-       [:div {}
-        [search-area/Component {:api-url-root api-url-root :compact? hash}]
-        (when hash
-          [GeneInfo {:hash hash :gene-name (get-gene-name-from-window-hash hash)}])]))
-
+     (let [{:keys [hash exac-age-info age-bins logged-in?]} @state]
+       (if logged-in?
+         [:div {}
+          [search-area/Component {:api-url-root api-url-root :compact? hash}]
+          (when hash
+            [GeneInfo {:hash hash :gene-name (get-gene-name-from-window-hash hash)}])]
+         (let [{:keys [values]} @state
+               {:keys [username password]} values]
+           [:div {:style {:backgroundColor "#343A41" :color "white"
+                          :padding 20}}
+            [search-area/Logo]
+            [:div {:style {:marginTop "15vh" :display "flex" :justifyContent "center"}}
+             [:div {:style {:textTransform "uppercase" :fontSize "xx-large" :fontWeight 900}}
+              "Log-In"]]
+            [:div {:style {:marginTop 12 :display "flex" :justifyContent "center"}}
+             [:input {:placeholder "Username"
+                      :value (or username "")
+                      :onChange #(swap! state assoc-in [:values :username] (-> % .-target .-value))
+                      :style {:width "20ex" :height "1.5em"
+                              :fontSize "large" :verticalAlign "top"}}]]
+            [:div {:style {:marginTop 12 :display "flex" :justifyContent "center"}}
+             [:input {:type "password"
+                      :placeholder "Password"
+                      :value (or password "")
+                      :onChange #(swap! state assoc-in [:values :password] (-> % .-target .-value))
+                      :style {:width "20ex" :height "1.5em"
+                              :fontSize "large" :verticalAlign "top"}}]]
+            [:div {:style {:marginTop 12 :display "flex" :justifyContent "center"}}
+             [:button {:onClick (fn [e]
+                                  (when (and (= username "dblofpreview") (= password "qY9CW7MDdY"))
+                                    (swap! state assoc :logged-in? true)))
+                       :style {:width "10ex" :height "1.5em"
+                               :fontSize "large" :verticalAlign "top"}}
+              "Log-In"]]
+            [:div {:style {:clear "both"
+                           :margin "10vh -20px -20px -20px"
+                           :height 4 :backgroundColor "#24AFB2"}}]]))))
    :component-did-mount
    (fn [{:keys [state locals]}]
      (let [hash-change-listener (fn [e]
@@ -280,16 +311,14 @@
                                       (swap! state dissoc :hash))))]
        (swap! locals assoc :hash-change-listener hash-change-listener)
        (.addEventListener js/window "hashchange" hash-change-listener)))
-
    :component-will-unmount
    (fn [{:keys [locals]}]
-
      (.removeEventListener js/window "hashchange" (get @locals :hash-change-listener)))})
 
 
 (defn render-application []
   (react/render
     (react/create-element
-      SearchBoxAndResults
+      App
       {})
     (.. js/document (getElementById "app"))))
