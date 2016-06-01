@@ -166,7 +166,7 @@
                        :y x
                        :orientation "h"
                        :marker {:color ["#FF9912" "#ABB9B9"
-                                        "#6AA5CD" "#ABB9B9"
+                                        "#6AA5CD" "#002F6C"
                                         "#108C44" "ED1E24"
                                         "#941494"]}}])
             (clj->js {:title "Population distribution"
@@ -179,8 +179,6 @@
                       })))
    ;"South Asian"  "Others" "Non-Finnish European" "Finnish" "East Asian" "American" "African"
 
-
-   ;#47cccc - sea green #E38A4F - orange; D42473 pink ; 961CB8 purple
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
      (.newPlot js/Plotly (@refs "group-plot")

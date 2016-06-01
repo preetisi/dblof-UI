@@ -6,19 +6,23 @@
    ))
 
 
-(def columns [{:key :variant_id :label "Variant" :width "20%"}
+(def columns [{:key :variant_id :label "Variant" :width "20%"
+               :format (fn [variant-id]
+                         [:a {:href (str "http://exac.broadinstitute.org/variant/" variant-id)
+                              :style {:textDecoration "none"}}
+                          variant-id])}
               {:key :chrom :label "Chrom" :width "10%"}
               {:key :pos :label "Position" :width "10%"}
               {:key :filter :label "Filter" :width "10%"}
               {:key :allele_count :label "Allele Count" :width "10%"}
               {:key :allele_num :label "Allele Number" :width "10%"}
               {:key :hom_count :label "Number of Homozygotes" :width "10%"}
-              {:key :allele_freq :label "Allele Frequency" :width "20%" :format #(.toFixed % 8)}])
+              {:key :allele_freq :label "Allele Frequency" :width "20%" :format #(.toFixed % 8)}
+            ])
 
 
 (defn- create-variants-query [gene-id]
   {:genes {:$in [gene-id]}
-   :filter "PASS"
    :vep_annotations
    {:$elemMatch
     {:Gene gene-id
@@ -32,23 +36,19 @@
 (react/defc Component
   {:get-initial-state
    (fn []
-     {:sort-column-key :variant_id
-      :sort-reversed? true})
+     {:sort-column-key :variant_id})
    :render
    (fn [{:keys [props state]}]
-     (let [{:keys [variants sort-column-key sort-reversed?]} @state]
+     (let [{:keys [variants sort-column-key]} @state]
        [:div {:style {:paddingTop 10 :fontSize "80%"}}
         [:div {:style {:display "flex" :alignItems "center" :fontWeight "bold"}}
          (map (fn [col]
                 [:div {:style {:flex (str "0 0 " (:width col)) :padding 10 :boxSizing "border-box"
                                :cursor "pointer"}
-                       :onClick #(swap! state assoc
-                                        :sort-column-key (:key col)
-                                        :sort-reversed? (not sort-reversed?))}
+                       :onClick #(swap! state assoc :sort-column-key (:key col))}
                  (:label col)
                  (when (= (:key col) sort-column-key)
-                   [:span {:style {:marginLeft 6 :fontSize "50%"}}
-                    (if sort-reversed? "▲" "▼")])])
+                   [:span {:style {:marginLeft 6 :fontSize "50%"}} "▼"])])
               columns)]
         [:div {:style {:backgroundColor "#D2D4D8" :height 2 :margin "0 10px"}}]
         [:div {}
@@ -63,8 +63,7 @@
                           (let [format (or (:format col) identity)]
                             (format (get x (name (:key col)))))])
                        columns)])
-               (let [sorted (sort-by #(get % (name sort-column-key)) variants)]
-                 (if sort-reversed? (reverse sorted) sorted))))]]))
+               (sort-by #(get % (name sort-column-key)) variants)))]]))
    :component-did-mount
    (fn [{:keys [this props]}]
      (this :load-variants (:gene-name props)))
