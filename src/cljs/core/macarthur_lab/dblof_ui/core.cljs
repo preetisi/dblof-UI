@@ -177,8 +177,7 @@
                               :showgrid false
                               :autotick false}
                       })))
-   ;"South Asian"  "Others" "Non-Finnish European" "Finnish" "East Asian" "American" "African"
-
+   ;;"South Asian"  "Others" "Non-Finnish European" "Finnish" "East Asian" "American" "African"
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
      (.newPlot js/Plotly (@refs "group-plot")
