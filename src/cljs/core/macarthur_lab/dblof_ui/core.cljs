@@ -39,7 +39,6 @@
 
 (def default-map1
   {"South Asian" 0
-   "Others" 0
    "Non-Finnish European" 0
    "Finnish" 0
    "East Asian" 0
@@ -51,22 +50,18 @@
            :method :post
            :data (u/->json-string
                   {:sql (str
-                         "select pop as 'each-gene-population',
-                          normalised_pop_freq as 'each-gene-population-frequency'
-                          from exac_population_summary_noarmalised where gene = ?
-                          and pop is not NULL order by pop desc")
+                         "select afr_caf as `African`, amr_caf as `Latino`,
+                          eas_caf as `East Asian`,fin_caf as `Finnish`,
+                          nfe_caf as `Non-Finnish European`, sas_caf as `South Asian`
+                          from gene_CAF where symbol= ?")
                    :params (clojure.string/upper-case gene-name)})
            :on-done (fn [{:keys [get-parsed-response]}]
-             (let [key-vector (map (fn [m] (get m "each-gene-population"))
-                                             (get (get-parsed-response) "rows"))
-                  value-vector (map (fn [m] (get m "each-gene-population-frequency"))
-                                              (get (get-parsed-response) "rows")
-                  )]
-               (let [exac_each_gene_pop_frequency (keys (merge default-map1 (zipmap key-vector value-vector)))
-                               exac_each_gene_population_category (vals (merge default-map1 (zipmap key-vector value-vector)))]
-               (cb exac_each_gene_pop_frequency exac_each_gene_population_category))))}))
+                      (let [population_frequencies (keys (merge default-map1 (nth (get (get-parsed-response) "rows") 0)))
+                            population_category (vals (merge default-map1 (nth (get (get-parsed-response) "rows") 0)))]
+                        (u/cljslog  "population_frequencies" population_frequencies)
+                        (u/cljslog "population_category" population_category)
 
-
+                        (cb population_frequencies population_category)))}))
 
 (defn- calculate-exac-group-age [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
