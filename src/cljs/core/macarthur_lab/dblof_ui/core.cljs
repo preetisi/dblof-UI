@@ -170,9 +170,9 @@
                        :x y
                        :y x
                        :orientation "h"
-                       :marker {:color ["#941494" "#108C44"
-                                        "#002F6C" "#ED1E24"
-                                        "#6AA5CD" "FF9912"
+                       :marker {:color ["FF9912" "#6AA5CD"
+                                        "#ED1E24" "#002F6C"
+                                        "#108C44" "#941494"
                                         ]}
 
                       }])
@@ -185,7 +185,7 @@
                               :showgrid false
                               :autotick false}
                       })))
-   ;;"South Asian"  "Others" "Non-Finnish European" "Finnish" "East Asian" "American" "African"
+   
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
      (.newPlot js/Plotly (@refs "group-plot")
