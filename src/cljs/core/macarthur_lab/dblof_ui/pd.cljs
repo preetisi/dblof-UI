@@ -6,21 +6,53 @@
    ))
 
 
-(defn- create-frequencies [exon-start exon-end positions]
+(defn- create-frequencies [exon-start exon-end variants]
   (let [sizes (reduce
                (fn [r p]
                  (conj r (- p (apply + exon-start r))))
                []
-               positions)
+               (map :position variants))
         sizes (conj sizes (- exon-end (apply + exon-start sizes)))]
     [:div {:style {:display "flex"}}
-     (interpose
-      [:div {:style {:flex "1 1 1" :position "relative"}}
-       [:div {:style {:position "absolute" :bottom 4 :height 10 :width 1
-                      :backgroundColor "red"}}]]
-      (map (fn [s]
-             [:div {:style {:flex (str s " " s " auto")}}])
-           sizes))]))
+     (interleave
+      (map (fn [s] [:div {:style {:flex (str s " " s " auto")}}]) sizes)
+      (map
+       (fn [v]
+         (let [bin (cond
+                     (= 1 (:allele-count v)) 1
+                     (<= (:allele-count v) 10) 2
+                     (<= (:allele-freq v) 0.01) 3
+                     :else 4)]
+           [:div {:style {:flex "1 1 1" :position "relative"}}
+            [:div {:style {:position "absolute" :bottom 4 :height (* bin 10) :width 3
+                           :backgroundColor "rgba(36,175,178,0.5)"}}]]))
+       variants))]))
+
+
+(defn- create-segments [sorted-exons sorted-variants]
+  (let [segments (reduce
+                  (fn [r {:strs [start size]}]
+                    (let [last-stop (if-let [last-segment (last r)]
+                                      (+ (:start last-segment) (:size last-segment))
+                                      0)
+                          intron-start (inc last-stop)
+                          intron-size (dec (- start last-stop))]
+                      (conj r
+                            {:exon? false :start intron-start :size intron-size
+                             :variants (filter #(and (>= (:position %) intron-start)
+                                                     (<= (:position %)
+                                                         (+ intron-start intron-size)))
+                                               sorted-variants)}
+                            {:exon? true :start start :size size
+                             :variants (filter #(and (>= (:position %) start)
+                                                     (<= (:position %) (+ start size)))
+                                               sorted-variants)})))
+                  []
+                  sorted-exons)]
+    (conj
+     segments
+     (let [last-segment (last segments)]
+       {:exon? false :start (inc (:start last-segment)) :size 100}))))
 
 
 (react/defc Component
@@ -29,14 +61,14 @@
      (let [{:keys [variants]} props
            {:keys [status]} @state
            {:keys [code data]} status
-           variants (map #(get % "pos") variants)
-           exons (when (and data variants)
-                   (map
-                    (fn [{:strs [start size]}]
-                      [:div {:style {:flex (str size " " size " auto") :backgroundColor "#333"}}
-                       (let [variants (filter #(and (>= % start) (<= % (+ start size))) variants)]
-                         (create-frequencies start (+ start size) variants))])
-                    (sort-by #(get % "start") data)))]
+           variants (map (fn [v]
+                           {:position (get v "pos")
+                            :allele-count (get v "allele_count")
+                            :allele-freq (get v "allele_freq")})
+                         variants)
+           segments (when (and data variants)
+                      (create-segments (sort-by #(get % "start") data)
+                                       (sort-by :position variants)))]
        [:div {:style {:backgroundColor "white" :padding "20px 16px"}}
         [:div {:style {:fontWeight "bold"}} "Positional distribution"]
         [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
@@ -46,9 +78,12 @@
                         :position "absolute" :width "100%" :bottom 30}}]
          [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
                         :display "flex"}}
-          [:div {:style {:flex "5 5 auto"}}]
-          (interpose [:div {:style {:flex "10 10 auto"}}] exons)
-          [:div {:style {:flex "5 5 auto"}}]]]]))
+          (map
+           (fn [{:keys [exon? start size variants]}]
+             [:div {:style {:flex (str (if exon? size 10) " " (if exon? size 10) " auto")
+                            :backgroundColor (when exon? "#333")}}
+              (create-frequencies start (+ start size) variants)])
+           segments)]]]))
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]
      (when-not (apply = (map :gene-name [props next-props]))
