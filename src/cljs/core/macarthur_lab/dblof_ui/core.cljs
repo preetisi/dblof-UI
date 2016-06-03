@@ -40,9 +40,9 @@
 (def default-map1
   {"South Asian" 0
    "Non-Finnish European" 0
+   "Latino" 0
    "Finnish" 0
    "East Asian" 0
-   "Latino" 0
    "African" 0})
 
 (defn- calculate-population-for-gene [gene-name cb]
@@ -50,8 +50,8 @@
            :method :post
            :data (u/->json-string
                   {:sql (str
-                         "select afr_caf as `African`, amr_caf as `Latino`,
-                          eas_caf as `East Asian`,fin_caf as `Finnish`,
+                         "select afr_caf as `African`,eas_caf as `East Asian`,
+                          fin_caf as `Finnish`, amr_caf as `Latino`,
                           nfe_caf as `Non-Finnish European`, sas_caf as `South Asian`
                           from gene_CAF where symbol= ?")
                    :params (clojure.string/upper-case gene-name)})
@@ -175,10 +175,10 @@
                        :x y
                        :y x
                        :orientation "h"
-                       :marker {:color ["#FF9912" "#ABB9B9"
-                                        "#6AA5CD" "#002F6C"
-                                        "#108C44" "ED1E24"
-                                        "#941494"]}
+                       :marker {:color ["#941494" "#108C44"
+                                        "#002F6C" "#ED1E24"
+                                        "#6AA5CD" "FF9912"
+                                        ]}
 
                       }])
             (clj->js {:title "Population distribution"
