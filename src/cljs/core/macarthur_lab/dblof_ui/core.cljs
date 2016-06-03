@@ -210,7 +210,6 @@
                       })))
    :render-plots
    (fn [{:keys [this props state refs]} gene-name]
-     (u/cljslog gene-name)
      (calculate-population-for-gene
       gene-name
       (fn [x y]
