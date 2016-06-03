@@ -58,9 +58,6 @@
            :on-done (fn [{:keys [get-parsed-response]}]
                       (let [population_frequencies (keys (merge default-map1 (nth (get (get-parsed-response) "rows") 0)))
                             population_category (vals (merge default-map1 (nth (get (get-parsed-response) "rows") 0)))]
-                        (u/cljslog  "population_frequencies" population_frequencies)
-                        (u/cljslog "population_category" population_category)
-
                         (cb population_frequencies population_category)))}))
 
 (defn- calculate-exac-group-age [gene-name cb]
@@ -164,12 +161,9 @@
    (fn [{:keys [this props state next-props]}]
      (when-not (apply = (map :gene-name [props next-props]))
        (this :render-plots (:gene-name next-props))
-       (u/cljslog "next-props"next-props)
        (this :load-variants-data (:gene-name next-props))))
    :build-each-gene-pop-plot
    (fn [{:keys [this refs state props]} x y gene-name]
-   (u/cljslog "x" x)
-     (u/cljslog "y" y)
      (.newPlot js/Plotly (@refs "population-plot")
             (clj->js [{:type "bar"
                        :name (str "Population " (clojure.string/upper-case gene-name) )
