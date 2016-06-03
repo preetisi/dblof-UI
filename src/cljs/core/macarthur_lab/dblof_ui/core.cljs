@@ -179,6 +179,7 @@
             (clj->js {:title "Population distribution"
                       :xaxis {:autorange true
                               :showgrid false
+                              :showticklabels false
                               :title "Frequency" :titlefont {:family "Arial"}}
                       :yaxis {:autorange true
                               :showgrid false
