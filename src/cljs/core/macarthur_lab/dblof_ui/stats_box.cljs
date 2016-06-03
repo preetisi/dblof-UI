@@ -45,8 +45,7 @@
                             " where gene = ?) as `lof-ratio`,"
                             " (select sum(ac_hom) from variant_annotation"
                             " where symbol = ? and lof = 'HC') as `homozygotes-count`,"
-                            " (select sum(ac_adj / an_adj) from variant_annotation"
-                            " where symbol = ? and lof = 'HC') as `cumulative-af`;")
+                            " (select caf from gene_CAF where symbol = ?) as `cumulative-af`;")
                       :params (repeat 3 gene-name)})
               :on-done (fn [{:keys [get-parsed-response]}]
                          (let [gene-info (first (get (get-parsed-response) "rows"))]
