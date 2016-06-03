@@ -42,7 +42,7 @@
    "Non-Finnish European" 0
    "Finnish" 0
    "East Asian" 0
-   "American" 0
+   "Latino" 0
    "African" 0})
 
 (defn- calculate-population-for-gene [gene-name cb]
@@ -95,7 +95,6 @@
                             (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2 gene-name))
                           )})))}))
 
-
 (defn- create-variants-query [gene-id]
   {:genes {:$in [gene-id]}
    :filter "PASS"
@@ -104,10 +103,8 @@
     {:Gene gene-id
      :LoF {:$ne ""}}}})
 
-
 (def variants-projection
   (reduce (fn [r col] (assoc r (:key col) 1)) {:vep_annotations 1} variant-table/columns))
-
 
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
