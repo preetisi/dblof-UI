@@ -11,12 +11,17 @@
    (fn [{:keys [props state]}]
      (let [{:keys [status]} @state
            {:keys [code data]} status]
-       [:div {}
-         (when-not (= code :loaded)
-           [:div {:style {:textAlign "center" :paddingTop 45 :marginBottom -40}}
-            (str "No additional gene information for "
-                 (clojure.string/upper-case (:gene-name props))
-                 ".")])
+       [:div {:style {:minHeight 200}}
+        (case code
+          nil [:div {:style {:textAlign "center" :paddingTop 45 :marginBottom -40}}
+               (str "Loading additional information for "
+                    (clojure.string/upper-case (:gene-name props))
+                    "...")]
+          :not-found [:div {:style {:textAlign "center" :paddingTop 45 :marginBottom -40}}
+                      (str "No additional gene information for "
+                           (clojure.string/upper-case (:gene-name props))
+                           ".")]
+          nil)
         [:div {:ref "markdown" :className "markdown-body"}]]))
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]
