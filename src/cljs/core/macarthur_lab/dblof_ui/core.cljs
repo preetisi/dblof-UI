@@ -158,20 +158,21 @@
         [:div {:style {:height 50}}]]))
    :component-did-mount
    (fn [{:keys [this props]}]
-     (this :render-plots)
+     (this :render-plots (:gene-name props))
      (this :load-variants-data (:gene-name props)))
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]
      (when-not (apply = (map :gene-name [props next-props]))
-       (this :render-plots)
+       (this :render-plots (:gene-name next-props))
+       (u/cljslog "next-props"next-props)
        (this :load-variants-data (:gene-name next-props))))
    :build-each-gene-pop-plot
-   (fn [{:keys [this refs state props]} x y]
+   (fn [{:keys [this refs state props]} x y gene-name]
    (u/cljslog "x" x)
      (u/cljslog "y" y)
      (.newPlot js/Plotly (@refs "population-plot")
             (clj->js [{:type "bar"
-                       :name "Population distribution of each gene"
+                       :name (str "Population " (clojure.string/upper-case gene-name) )
                        :x y
                        :y x
                        :orientation "h"
@@ -214,15 +215,16 @@
 
                       })))
    :render-plots
-   (fn [{:keys [this props state refs]}]
+   (fn [{:keys [this props state refs]} gene-name]
+     (u/cljslog gene-name)
      (calculate-population-for-gene
-      (get-gene-name-from-window-hash (:hash props))
+      gene-name
       (fn [x y]
-        (react/call :build-each-gene-pop-plot this x y)))
+        (react/call :build-each-gene-pop-plot this x y gene-name)))
      (calculate-exac-group-age
-      (get-gene-name-from-window-hash (:hash props))
+      gene-name
       (fn [x1 y1 x2 y2 gene-name]
-        (react/call :build-group-ages-plot this x1 y1 x2 y2 (get-gene-name-from-window-hash (:hash props))))))
+        (react/call :build-group-ages-plot this x1 y1 x2 y2 gene-name))))
    :load-variants-data
    (fn [{:keys [props state]} gene-name]
      (let [exec-mongo-url (str api-url-root "/exec-mongo")
