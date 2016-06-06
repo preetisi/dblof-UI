@@ -24,7 +24,7 @@
                      (<= (:allele-freq v) 0.01) 3
                      :else 4)]
            [:div {:style {:flex "1 1 1" :position "relative"}}
-            [:div {:style {:position "absolute" :bottom 4 :height (* bin 10) :width 3
+            [:div {:style {:position "absolute" :bottom 4 :height (* bin 20) :width 3
                            :backgroundColor "rgba(36,175,178,0.5)"}}]]))
        variants))]))
 
@@ -72,7 +72,7 @@
        [:div {:style {:backgroundColor "white" :padding "20px 16px"}}
         [:div {:style {:fontWeight "bold"}} "Positional distribution"]
         [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
-        [:div {:style {:height 100 :position :relative
+        [:div {:style {:height 150 :position :relative
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          [:div {:style {:height 1 :backgroundColor "#ccc"
                         :position "absolute" :width "100%" :bottom 30}}]
