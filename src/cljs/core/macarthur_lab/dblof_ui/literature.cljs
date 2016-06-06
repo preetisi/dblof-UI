@@ -24,9 +24,10 @@
           nil)
         [:div {:ref "markdown" :className "markdown-body"}]]))
    :component-will-receive-props
-   (fn [{:keys [this props state next-props]}]
+   (fn [{:keys [this props state refs next-props]}]
      (when-not (apply = (map :gene-name [props next-props]))
        (swap! state dissoc :status)
+       (aset (@refs "markdown") "innerHTML" "")
        (this :load-data (:gene-name next-props))))
    :component-did-mount
    (fn [{:keys [this props]}] (this :load-data (:gene-name props)))
@@ -37,9 +38,9 @@
               :on-done (fn [{:keys [success? xhr]}]
                          (if success?
                            (this :render-markdown (.-responseText xhr))
-                           (do
-                             (swap! state assoc :status {:code :not-found})
-                             (aset (@refs "markdown") "innerHTML" ""))))}))
+                           (swap! state assoc :status {:code :not-found}))
+                         (when-let [on-loaded (:on-loaded props)]
+                           (after-update #(on-loaded success?))))}))
    :render-markdown
    (fn [{:keys [props state refs]} md]
      (u/ajax {:url (str (:api-url-root props) "/render-github-markdown")
