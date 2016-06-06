@@ -71,6 +71,7 @@
                             (let [format (or (:format col) identity)]
                               (format (get x (name (:key col)))))])
                          columns)])
-                 (sort-by #(get % (name sort-column-key)) variants)))]
+                 (let [sorted (sort-by #(get % (name sort-column-key)) variants)]
+                   (if sort-reversed? (reverse sorted) sorted))))]
           [:div {:style {:padding "1em 0 10em 10px"}}
            "Loading variants data..."])]))})
