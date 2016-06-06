@@ -48,14 +48,18 @@
         [:div {:style {:display "flex" :alignItems "center" :fontWeight "bold"}}
          (map (fn [col]
                 [:div {:style {:flex (str "0 0 " (:width col)) :padding 10 :boxSizing "border-box"
-                               :cursor "pointer"}
+                               :cursor "pointer" :position "relative"}
                        :onClick #(swap! state assoc
                                         :sort-column-key (:key col)
-                                        :sort-reversed? (not sort-reversed?))}
+                                        :sort-reversed? (if (= (:key col) sort-column-key)
+                                                          (not sort-reversed?)
+                                                          false))}
                  (:label col)
-                 (when (= (:key col) sort-column-key)
-                   [:span {:style {:marginLeft 6 :fontSize "50%"}}
-                    (if sort-reversed? "▲" "▼")])])
+                 [:span {:style {:position "absolute" :paddingLeft 6
+                                 :color (when-not (= (:key col) sort-column-key) "#ccc")}}
+                  (if (= (:key col) sort-column-key)
+                    (if sort-reversed? "↑" "↓")
+                    "⇅")]])
               columns)]
         [:div {:style {:backgroundColor "#D2D4D8" :height 2 :margin "0 10px"}}]
         (if variants
