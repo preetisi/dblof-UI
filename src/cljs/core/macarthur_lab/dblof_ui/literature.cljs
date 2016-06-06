@@ -1,4 +1,4 @@
-(ns macarthur-lab.dblof-ui.gene-info
+(ns macarthur-lab.dblof-ui.literature
   (:require
    clojure.string
    [dmohs.react :as react]

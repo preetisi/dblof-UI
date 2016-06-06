@@ -2,7 +2,7 @@
   (:require
    clojure.string
    [dmohs.react :as react]
-   [macarthur-lab.dblof-ui.gene-info :as gene-info]
+   [macarthur-lab.dblof-ui.literature :as literature]
    [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.search-area :as search-area]
    [macarthur-lab.dblof-ui.stats-box :as stats-box]
@@ -108,7 +108,7 @@
   {:render
    (fn [{:keys [this props state]}]
      (let [{:keys [gene-name]} props
-           {:keys [each-gene-pop? each-gene-age? show-gene-info?]} @state]
+           {:keys [each-gene-pop? each-gene-age? show-literature?]} @state]
        [:div {:style {:backgroundColor "#E9E9E9"}}
         [:div {:style {:paddingTop 30 :display "flex"}}
          [:div {:style {:flex "1 1 50%"}}
@@ -132,22 +132,22 @@
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex"}}
          [:div {:style {:flex "0 0 50%"
-                        :backgroundColor (when-not show-gene-info? "white")
-                        :cursor (when show-gene-info? "pointer")
+                        :backgroundColor (when-not show-literature? "white")
+                        :cursor (when show-literature? "pointer")
                         :padding "10px 0"
                         :fontWeight "bold" :fontSize "120%" :textAlign "center"}
-                :onClick #(swap! state assoc :show-gene-info? false)}
+                :onClick #(swap! state assoc :show-literature? false)}
           "Variant Information"]
          [:div {:style {:flex "0 0 50%"
-                        :backgroundColor (when show-gene-info? "white")
-                        :cursor (when-not show-gene-info? "pointer")
+                        :backgroundColor (when show-literature? "white")
+                        :cursor (when-not show-literature? "pointer")
                         :padding "10px 0"
                         :fontWeight "bold" :fontSize "120%" :textAlign "center"}
-                :onClick #(swap! state assoc :show-gene-info? true)}
+                :onClick #(swap! state assoc :show-literature? true)}
           "Gene Information"]]
         [:div {:style {:backgroundColor "white"}}
-         (if show-gene-info?
-           [gene-info/Component (merge {:api-url-root api-url-root}
+         (if show-literature?
+           [literature/Component (merge {:api-url-root api-url-root}
                                        (select-keys props [:gene-name]))]
            [variant-table/Component (merge {:api-url-root api-url-root}
                                            (select-keys props [:gene-name])
@@ -185,7 +185,7 @@
                               :showgrid false
                               :autotick false}
                       })))
-   
+
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
      (.newPlot js/Plotly (@refs "group-plot")
