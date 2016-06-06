@@ -84,3 +84,7 @@
           (if data
             (.send xhr data)
             (.send xhr)))))))
+
+
+(defn get-exac-variant-page-href [variant-id]
+  (str "http://exac.broadinstitute.org/variant/" variant-id))

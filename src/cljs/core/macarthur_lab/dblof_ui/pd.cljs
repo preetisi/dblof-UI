@@ -24,8 +24,10 @@
                      (<= (:allele-freq v) 0.01) 3
                      :else 4)]
            [:div {:style {:flex "1 1 1" :position "relative"}}
-            [:div {:style {:position "absolute" :bottom 4 :height (* bin 20) :width 3
-                           :backgroundColor "rgba(36,175,178,0.5)"}}]]))
+            [:a {:href (u/get-exac-variant-page-href (:id v))
+                 :target "_blank"
+                 :style {:position "absolute" :bottom 4 :height (* bin 20) :width 3
+                         :backgroundColor "rgba(36,175,178,0.5)"}}]]))
        variants))]))
 
 
@@ -62,7 +64,8 @@
            {:keys [status]} @state
            {:keys [code data]} status
            variants (map (fn [v]
-                           {:position (get v "pos")
+                           {:id (get v "variant_id")
+                            :position (get v "pos")
                             :allele-count (get v "allele_count")
                             :allele-freq (get v "allele_freq")})
                          variants)

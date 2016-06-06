@@ -8,7 +8,7 @@
 
 (def columns [{:key :variant_id :label "Variant" :width "20%"
                :format (fn [variant-id]
-                         [:a {:href (str "http://exac.broadinstitute.org/variant/" variant-id)
+                         [:a {:href (u/get-exac-variant-page-href variant-id)
                               :target "_blank"
                               :style {:textDecoration "none"}}
                           variant-id])}
