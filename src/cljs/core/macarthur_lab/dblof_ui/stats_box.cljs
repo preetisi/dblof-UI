@@ -10,23 +10,27 @@
   {:render
    (fn [{:keys [state]}]
      (let [{:keys [status]} @state
-           {:strs [lof-ratio cumulative-af homozygotes-count]} (:data status)]
+           {:strs [lof-ratio cumulative-af homozygotes-count pli]} (:data status)]
        [:div {:style {:backgroundColor "white" :padding "20px 16px 16px 16px"}}
         [:div {:style {:display "flex"}}
-         [:div {:style {:flex "0 0 33%"}}
+         [:div {:style {:flex "0 0 25%"}}
           [:div {:style {:fontWeight "bold"}} "Obs/Exp"]]
-         [:div {:style {:flex "0 0 33%"}}
+         [:div {:style {:flex "0 0 25%"}}
           [:div {:style {:fontWeight "bold"}} "Cumulative AF"]]
-         [:div {:style {:flex "0 0 33%"}}
-          [:div {:style {:fontWeight "bold"}} "Homozygotes"]]]
+         [:div {:style {:flex "0 0 25%"}}
+          [:div {:style {:fontWeight "bold"}} "Homozygotes"]]
+          [:div {:style {:flex "0 0 25%"}}
+           [:div {:style {:fontWeight "bold"}} "pLI"]]]
         [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
         [:div {:style {:marginTop 10 :display "flex" :fontWeight 100}}
-         [:div {:style {:flex "0 0 33%"}}
+         [:div {:style {:flex "0 0 25%"}}
           [:div {} (if lof-ratio (str (.toFixed lof-ratio 2) "%") "?")]]
-         [:div {:style {:flex "0 0 33%"}}
+         [:div {:style {:flex "0 0 25%"}}
           [:div {} (if cumulative-af (str (.toFixed (* cumulative-af 100) 2) "%") "?")]]
-         [:div {:style {:flex "0 0 33%"}}
-          [:div {} (if homozygotes-count homozygotes-count "?")]]]]))
+         [:div {:style {:flex "0 0 25%"}}
+          [:div {} (if homozygotes-count homozygotes-count "?")]]
+          [:div {:style {:flex "0 0 25%"}}
+           [:div {} (if pli pli "?")]]]]))
    :component-did-mount
    (fn [{:keys [this props]}] (this :load-data (:gene-name props)))
    :component-will-receive-props
@@ -43,10 +47,11 @@
                             "select"
                             " (select (n_lof / exp_lof) * 100 from constraint_scores"
                             " where gene = ?) as `lof-ratio`,"
+                            " (select cast(pli as decimal(10,5)) from constraint_scores where gene = ?) as `pli`,"
                             " (select sum(ac_hom) from variant_annotation"
                             " where symbol = ? and lof = 'HC') as `homozygotes-count`,"
                             " (select caf from gene_CAF where symbol = ?) as `cumulative-af`;")
-                      :params (repeat 3 gene-name)})
+                      :params (repeat 4 gene-name)})
               :on-done (fn [{:keys [get-parsed-response]}]
                          (let [gene-info (first (get (get-parsed-response) "rows"))]
                            (swap! state assoc :status {:code :loaded :data gene-info})))}))})
