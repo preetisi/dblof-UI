@@ -47,7 +47,7 @@
                             "select"
                             " (select (n_lof / exp_lof) * 100 from constraint_scores"
                             " where gene = ?) as `lof-ratio`,"
-                            " (select cast(pli as decimal(10,5)) from constraint_scores where gene = ?) as `pli`,"
+                            " (select cast(pli as decimal(10,2)) from constraint_scores where gene = ?) as `pli`,"
                             " (select sum(ac_hom) from variant_annotation"
                             " where symbol = ? and lof = 'HC') as `homozygotes-count`,"
                             " (select caf from gene_CAF where symbol = ?) as `cumulative-af`;")
