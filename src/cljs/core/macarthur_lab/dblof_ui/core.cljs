@@ -78,12 +78,13 @@
                             population_category (vals (merge default-map1 (nth (get (get-parsed-response) "rows") 0)))]
                         (cb population_frequencies population_category)))}))
 
+
 (defn- calculate-exac-group-age [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
            :data (u/->json-string
                   {:sql (str
-                         "select `age-bins`, `exac-age-frequency` from trunctated_norm_age"
+                         "select `age-bins`, `exac-age-frequency` from trunctated_norm_age order by `age-bins`"
                          )
                    })
            :on-done
@@ -96,20 +97,23 @@
                         :method :post
                         :data (u/->json-string
                                {:sql (str
-                                      "select nadh.bin_ls_20 as bin_ls_20, nadh.bin_20 as bin_20, nadh.bin_25 as bin_25,
-                                       nadh.bin_30 as bin_30, nadh.bin_35 as bin_35, nadh.bin_40 as bin_40, nadh.bin_45 as bin_45,
-                                       nadh.bin_50 as bin_50, nadh.bin_55 as bin_55, nadh.bin_60 as bin_60, nadh.bin_65 as bin_65,
-                                       nadh.bin_70 as bin_70, nadh.bin_75 as bin_75, nadh.bin_80 as bin_80, nadh.bin_mt_85 as bin_mt_85
-                                       from normalised_age_histogram nadh inner join gene_symbols gs
-                                       on nadh.gene = gs.gene_id where gs.symbol = ?;")
+                                      "select nadh.bin_ls_20 as `19`, nadh.bin_20 as `20`,
+                                       nadh.bin_25 as `25`, nadh.bin_30 as `30`, nadh.bin_35 as `35`,
+                                       nadh.bin_40 as `40`, nadh.bin_45 as `45`,nadh.bin_50 as `50`,
+                                       nadh.bin_55 as `55`, nadh.bin_60 as `60`, nadh.bin_65 as `65`,
+                                       nadh.bin_70 as `70`, nadh.bin_75 as `75`, nadh.bin_80 as `80`,
+                                       nadh.bin_mt_85 as `85` from normalised_age_histogram nadh
+                                       inner join gene_symbols gs on nadh.gene = gs.gene_id where gs.symbol = ?;")
                                 :params (clojure.string/upper-case gene-name)
                                 })
                         :on-done
                         (fn [{:keys [get-parsed-response]}]
-                          (let [age_bins (keys (merge default-age-map1 (nth (get (get-parsed-response) "rows") 0)))
-                                age_frequencies (vals (merge default-age-map1 (nth (get (get-parsed-response) "rows") 0)))]
-                            (u/cljslog "age_frequencies" age_bins age_frequencies exac-age-frequency-g1 exac-bins-g1 )
-                            (cb exac-age-frequency-g1 exac-bins-g1 age_bins age_frequencies))
+                          (let [age_bins_each_gene (map (fn [s] (js/parseInt s))
+                                                        (keys (nth (get (get-parsed-response) "rows") 0)))
+                                age_frequencies_each_gene (vals (nth (get (get-parsed-response) "rows") 0))
+                                ]
+                            (u/cljslog "age_frequencies" age_bins_each_gene age_frequencies_each_gene exac-age-frequency-g1 exac-bins-g1 )
+                            (cb exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene age_bins_each_gene gene-name))
                           )})))}))
 
 (defn- create-variants-query [gene-id]
@@ -261,6 +265,7 @@
                                      :options {:limit 10000}})
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
+                               ;;(u/cljslog "variants" :variants)
                                (swap! state assoc :variants (get-parsed-response)))})))})))})
 
 
