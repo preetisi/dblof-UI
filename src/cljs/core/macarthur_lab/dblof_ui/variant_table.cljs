@@ -19,6 +19,7 @@
               {:key :allele_num :label "Allele Number" :width "10%"}
               {:key :hom_count :label "Number of Homozygotes" :width "10%"}
               {:key :allele_freq :label "Allele Frequency" :width "20%" :format #(.toFixed % 8)}
+              {:key :consequences :label "Consequences" :width "10%"}
             ])
 
 
