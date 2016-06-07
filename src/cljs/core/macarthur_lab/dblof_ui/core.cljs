@@ -2,7 +2,7 @@
   (:require
    clojure.string
    [dmohs.react :as react]
-   [macarthur-lab.dblof-ui.literature :as literature]
+   [macarthur-lab.dblof-ui.gene-info :as gene-info]
    [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.search-area :as search-area]
    [macarthur-lab.dblof-ui.stats-box :as stats-box]
@@ -45,6 +45,24 @@
    "East Asian" 0
    "African" 0})
 
+(def default-age-map1
+  {
+    "bin_ls_20" 0
+    "bin_20" 0
+    "bin_25" 0
+    "bin_30" 0
+    "bin_35" 0
+    "bin_40" 0
+    "bin_45" 0
+    "bin_50" 0
+    "bin_55" 0
+    "bin_60" 0
+    "bin_65" 0
+    "bin_70" 0
+    "bin_75" 0
+    "bin_80" 0
+    "bin_mt_85" 0})
+
 (defn- calculate-population-for-gene [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
@@ -78,18 +96,20 @@
                         :method :post
                         :data (u/->json-string
                                {:sql (str
-                                      "select agebins as 'each-age-bins',
-                                       `af.agefreq/af_sums.s` as 'exac-each-gene-age-frequency'
-                                        from truncated_norm_age_each_gene where gene =?")
+                                      "select nadh.bin_ls_20 as bin_ls_20, nadh.bin_20 as bin_20, nadh.bin_25 as bin_25,
+                                       nadh.bin_30 as bin_30, nadh.bin_35 as bin_35, nadh.bin_40 as bin_40, nadh.bin_45 as bin_45,
+                                       nadh.bin_50 as bin_50, nadh.bin_55 as bin_55, nadh.bin_60 as bin_60, nadh.bin_65 as bin_65,
+                                       nadh.bin_70 as bin_70, nadh.bin_75 as bin_75, nadh.bin_80 as bin_80, nadh.bin_mt_85 as bin_mt_85
+                                       from normalised_age_histogram nadh inner join gene_symbols gs
+                                       on nadh.gene = gs.gene_id where gs.symbol = ?;")
                                 :params (clojure.string/upper-case gene-name)
                                 })
                         :on-done
                         (fn [{:keys [get-parsed-response]}]
-                          (let [each-gene-age-feq-g2 (map (fn [m] (get m "exac-each-gene-age-frequency"))
-                                                          (get (get-parsed-response) "rows"))
-                                each-gene-age-bins-g2 (map (fn [m] (get m "each-age-bins"))
-                                                           (get (get-parsed-response) "rows"))]
-                            (cb exac-age-frequency-g1 exac-bins-g1 each-gene-age-feq-g2 each-gene-age-bins-g2 gene-name))
+                          (let [age_bins (keys (merge default-age-map1 (nth (get (get-parsed-response) "rows") 0)))
+                                age_frequencies (vals (merge default-age-map1 (nth (get (get-parsed-response) "rows") 0)))]
+                            (u/cljslog "age_frequencies" age_bins age_frequencies exac-age-frequency-g1 exac-bins-g1 )
+                            (cb exac-age-frequency-g1 exac-bins-g1 age_bins age_frequencies))
                           )})))}))
 
 (defn- create-variants-query [gene-id]
@@ -105,13 +125,10 @@
 
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
-  {:get-initial-state
-   (fn []
-     {:auto-select-variants? true})
-   :render
+  {:render
    (fn [{:keys [this props state]}]
      (let [{:keys [gene-name]} props
-           {:keys [show-variants? auto-select-variants?]} @state]
+           {:keys [each-gene-pop? each-gene-age? show-gene-info?]} @state]
        [:div {:style {:backgroundColor "#E9E9E9"}}
         [:div {:style {:paddingTop 30 :display "flex"}}
          [:div {:style {:flex "1 1 50%"}}
@@ -135,32 +152,26 @@
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex"}}
          [:div {:style {:flex "0 0 50%"
-                        :backgroundColor (when-not show-variants? "white")
-                        :cursor (when show-variants? "pointer")
+                        :backgroundColor (when-not show-gene-info? "white")
+                        :cursor (when show-gene-info? "pointer")
                         :padding "10px 0"
                         :fontWeight "bold" :fontSize "120%" :textAlign "center"}
-                :onClick #(swap! state assoc :show-variants? false :auto-select-variants? false)}
-          "Gene Information"]
+                :onClick #(swap! state assoc :show-gene-info? false)}
+          "Variant Information"]
          [:div {:style {:flex "0 0 50%"
-                        :backgroundColor (when show-variants? "white")
-                        :cursor (when-not show-variants? "pointer")
+                        :backgroundColor (when show-gene-info? "white")
+                        :cursor (when-not show-gene-info? "pointer")
                         :padding "10px 0"
                         :fontWeight "bold" :fontSize "120%" :textAlign "center"}
-                :onClick #(swap! state assoc :show-variants? true)}
-          "Variant Information"]]
+                :onClick #(swap! state assoc :show-gene-info? true)}
+          "Gene Information"]]
         [:div {:style {:backgroundColor "white"}}
-         (if show-variants?
+         (if show-gene-info?
+           [gene-info/Component (merge {:api-url-root api-url-root}
+                                       (select-keys props [:gene-name]))]
            [variant-table/Component (merge {:api-url-root api-url-root}
                                            (select-keys props [:gene-name])
-                                           (select-keys @state [:variants]))]
-           [literature/Component
-            (merge {:api-url-root api-url-root
-                    :on-loaded (fn [has-literature?]
-                                 (when (:auto-select-variants? @state)
-                                   (swap! state assoc :auto-select-variants? false)
-                                   (when-not has-literature?
-                                     (swap! state assoc :show-variants? true))))}
-                   (select-keys props [:gene-name]))])]
+                                           (select-keys @state [:variants]))])]
         [:div {:style {:height 50}}]]))
    :component-did-mount
    (fn [{:keys [this props]}]
@@ -169,8 +180,6 @@
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]
      (when-not (apply = (map :gene-name [props next-props]))
-       (swap! state dissoc :show-variants?)
-       (swap! state assoc :auto-select-variants? true)
        (this :render-plots (:gene-name next-props))
        (this :load-variants-data (:gene-name next-props))))
    :build-each-gene-pop-plot
