@@ -24,13 +24,13 @@
         [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
         [:div {:style {:marginTop 10 :display "flex" :fontWeight 100}}
          [:div {:style {:flex "0 0 25%"}}
-          [:div {} (if lof-ratio (str (.toFixed lof-ratio 2) "%") "?")]]
+          [:div {} (if lof-ratio (str (.toFixed lof-ratio 2) "%") "loading")]]
          [:div {:style {:flex "0 0 25%"}}
-          [:div {} (if cumulative-af (str (.toFixed (* cumulative-af 100) 2) "%") "?")]]
+          [:div {} (if cumulative-af (str (.toFixed (* cumulative-af 100) 2) "%") "loading")]]
          [:div {:style {:flex "0 0 25%"}}
-          [:div {} (if homozygotes-count homozygotes-count "?")]]
+          [:div {} (if homozygotes-count homozygotes-count "loading")]]
           [:div {:style {:flex "0 0 25%"}}
-           [:div {} (if pli (.toFixed pli 2)"?")]]]]))
+           [:div {} (if pli (.toFixed pli 2)"loading")]]]]))
    :component-did-mount
    (fn [{:keys [this props]}] (this :load-data (:gene-name props)))
    :component-will-receive-props

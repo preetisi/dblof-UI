@@ -110,9 +110,7 @@
                         (fn [{:keys [get-parsed-response]}]
                           (let [age_bins_each_gene (map (fn [s] (js/parseInt s))
                                                         (keys (nth (get (get-parsed-response) "rows") 0)))
-                                age_frequencies_each_gene (vals (nth (get (get-parsed-response) "rows") 0))
-                                ]
-                            (u/cljslog "age_frequencies" age_bins_each_gene age_frequencies_each_gene exac-age-frequency-g1 exac-bins-g1 )
+                                age_frequencies_each_gene (vals (nth (get (get-parsed-response) "rows") 0))]
                             (cb exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene age_bins_each_gene gene-name))
                           )})))}))
 
@@ -122,10 +120,13 @@
    :vep_annotations
    {:$elemMatch
     {:Gene gene-id
-     :LoF {:$ne ""}}}})
+     :LoF {:$ne ""}
+      }}})
 
 (def variants-projection
   (reduce (fn [r col] (assoc r (:key col) 1)) {:vep_annotations 1} variant-table/columns))
+
+
 
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
@@ -151,8 +152,12 @@
          [:div {:ref "group-plot" :style {:flex "1 1 50%" :height 300}}]
          [:div {:style {:flex "1 1 30px"}}]
          [:div {:style {:flex "1 1 50%"}}
-          [:div {:style {:paddingLeft 70 :backgroundColor "white"}}
-           [:div {:ref "population-plot" :style {:height 300}}]]]]
+          [:div {:style {:paddingLeft 60 :backgroundColor "white"}}
+           [:div {:style {:paddingTop 20 :fontWeight "bold"}} "Population distribution"]
+           [:div {:style {:marginTop 6 :height 1 :backgroundColor "#959A9E"}}]
+           [:div {:ref "population-plot" :style {:position "relative"
+                         :height 300 :paddingTop 0}}]
+             ]]]
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex"}}
          [:div {:style {:flex "0 0 50%"
@@ -190,7 +195,6 @@
    (fn [{:keys [this refs state props]} x y gene-name]
      (.newPlot js/Plotly (@refs "population-plot")
             (clj->js [{:type "bar"
-                       :name (str "Population " (clojure.string/upper-case gene-name) )
                        :x y
                        :y x
                        :orientation "h"
@@ -200,11 +204,11 @@
                                         ]}
 
                       }])
-            (clj->js {:title "Population distribution"
+            (clj->js {
                       :xaxis {:autorange true
                               :showgrid false
                               :showticklabels false
-                              :title "Frequency" :titlefont {:family "Arial"}}
+                              :title "Frequency" :titlefont {:size 14}}
                       :yaxis {:autorange true
                               :showgrid false
                               :autotick false}
@@ -225,10 +229,10 @@
             (clj->js {
                       :xaxis {:autorange true
                                :showgrid false
-                               :title "Age" :titlefont {:size 14 :color "black" :family "Arial"}}
+                               :title "Age" :titlefont {:size 14}}
                       :yaxis {:autorange true
                                :showgrid false
-                               :title "Frequency" :showticklabels false}
+                               :title "Frequency" :showticklabels false :titlefont {:size 14}}
                       :legend {:x 0 :y 1.35 :bgcolor "rgba(255, 255, 255, 0)"}
 
 
@@ -265,8 +269,10 @@
                                      :options {:limit 10000}})
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
-                               ;;(u/cljslog "variants" :variants)
-                               (swap! state assoc :variants (get-parsed-response)))})))})))})
+                               (swap! state assoc :variants (get-parsed-response))
+
+                               #_(u/cljslog :variants (get-parsed-response))
+                              )})))})))})
 
 
 (defn transform-vector-to-gene-label-map [m]
