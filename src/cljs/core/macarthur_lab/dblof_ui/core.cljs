@@ -97,12 +97,12 @@
                         :method :post
                         :data (u/->json-string
                                {:sql (str
-                                      "select nadh.bin_ls_20 as `19`, nadh.bin_20 as `20`,
+                                      "select nadh.bin_ls_20 as `15`, nadh.bin_20 as `20`,
                                        nadh.bin_25 as `25`, nadh.bin_30 as `30`, nadh.bin_35 as `35`,
                                        nadh.bin_40 as `40`, nadh.bin_45 as `45`,nadh.bin_50 as `50`,
                                        nadh.bin_55 as `55`, nadh.bin_60 as `60`, nadh.bin_65 as `65`,
                                        nadh.bin_70 as `70`, nadh.bin_75 as `75`, nadh.bin_80 as `80`,
-                                       nadh.bin_mt_85 as `85` from normalised_age_histogram nadh
+                                       nadh.bin_85 as `85` from normalised_age_new_histogram nadh
                                        inner join gene_symbols gs on nadh.gene = gs.gene_id where gs.symbol = ?;")
                                 :params (clojure.string/upper-case gene-name)
                                 })
@@ -111,6 +111,7 @@
                           (let [age_bins_each_gene (map (fn [s] (js/parseInt s))
                                                         (keys (nth (get (get-parsed-response) "rows") 0)))
                                 age_frequencies_each_gene (vals (nth (get (get-parsed-response) "rows") 0))]
+                            (u/cljslog exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene age_bins_each_gene)
                             (cb exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene age_bins_each_gene gene-name))
                           )})))}))
 
