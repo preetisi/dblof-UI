@@ -2,7 +2,7 @@
   (:require
    clojure.string
    [dmohs.react :as react]
-   [macarthur-lab.dblof-ui.gene-info :as gene-info]
+   [macarthur-lab.dblof-ui.literature :as literature]
    [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.search-area :as search-area]
    [macarthur-lab.dblof-ui.stats-box :as stats-box]
@@ -131,10 +131,13 @@
 
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
-  {:render
+  {:get-initial-state
+   (fn []
+     {:auto-select-variants? true})
+   :render
    (fn [{:keys [this props state]}]
      (let [{:keys [gene-name]} props
-           {:keys [each-gene-pop? each-gene-age? show-gene-info?]} @state]
+           {:keys [show-variants? auto-select-variants?]} @state]
        [:div {:style {:backgroundColor "#E9E9E9"}}
         [:div {:style {:paddingTop 30 :display "flex"}}
          [:div {:style {:flex "1 1 50%"}}
@@ -162,26 +165,32 @@
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex"}}
          [:div {:style {:flex "0 0 50%"
-                        :backgroundColor (when-not show-gene-info? "white")
-                        :cursor (when show-gene-info? "pointer")
+                        :backgroundColor (when-not show-variants? "white")
+                        :cursor (when show-variants? "pointer")
                         :padding "10px 0"
                         :fontWeight "bold" :fontSize "120%" :textAlign "center"}
-                :onClick #(swap! state assoc :show-gene-info? false)}
-          "Variant Information"]
+                :onClick #(swap! state assoc :show-variants? false :auto-select-variants? false)}
+          "Gene Information"]
          [:div {:style {:flex "0 0 50%"
-                        :backgroundColor (when show-gene-info? "white")
-                        :cursor (when-not show-gene-info? "pointer")
+                        :backgroundColor (when show-variants? "white")
+                        :cursor (when-not show-variants? "pointer")
                         :padding "10px 0"
                         :fontWeight "bold" :fontSize "120%" :textAlign "center"}
-                :onClick #(swap! state assoc :show-gene-info? true)}
-          "Gene Information"]]
+                :onClick #(swap! state assoc :show-variants? true)}
+          "Variant Information"]]
         [:div {:style {:backgroundColor "white"}}
-         (if show-gene-info?
-           [gene-info/Component (merge {:api-url-root api-url-root}
-                                       (select-keys props [:gene-name]))]
+         (if show-variants?
            [variant-table/Component (merge {:api-url-root api-url-root}
                                            (select-keys props [:gene-name])
-                                           (select-keys @state [:variants]))])]
+                                           (select-keys @state [:variants]))]
+           [literature/Component
+            (merge {:api-url-root api-url-root
+                    :on-loaded (fn [has-literature?]
+                                 (when (:auto-select-variants? @state)
+                                   (swap! state assoc :auto-select-variants? false)
+                                   (when-not has-literature?
+                                     (swap! state assoc :show-variants? true))))}
+                   (select-keys props [:gene-name]))])]
         [:div {:style {:height 50}}]]))
    :component-did-mount
    (fn [{:keys [this props]}]
@@ -190,6 +199,8 @@
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]
      (when-not (apply = (map :gene-name [props next-props]))
+       (swap! state dissoc :show-variants?)
+       (swap! state assoc :auto-select-variants? true)
        (this :render-plots (:gene-name next-props))
        (this :load-variants-data (:gene-name next-props))))
    :build-each-gene-pop-plot
