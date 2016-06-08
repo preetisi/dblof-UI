@@ -30,7 +30,7 @@
          [:div {:style {:flex "0 0 25%"}}
           [:div {} (if homozygotes-count homozygotes-count "?")]]
           [:div {:style {:flex "0 0 25%"}}
-           [:div {} (if pli pli "?")]]]]))
+           [:div {} (if pli (.toFixed pli 2)"?")]]]]))
    :component-did-mount
    (fn [{:keys [this props]}] (this :load-data (:gene-name props)))
    :component-will-receive-props
