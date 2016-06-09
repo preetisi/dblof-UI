@@ -25,7 +25,8 @@
            :on-done (fn [{:keys [get-parsed-response]}]
                       (reset! genes-atom
                               (map clojure.string/lower-case
-                                   (map #(get % "gene") (get (get-parsed-response) "rows")))))}))
+                                   (map #(get % "gene")
+                                        (get (get-parsed-response) "rows")))))}))
 
 
 (defn- get-gene-name-from-window-hash [window-hash]
@@ -44,24 +45,6 @@
    "Finnish" 0
    "East Asian" 0
    "African" 0})
-
-(def default-age-map1
-  {
-    "bin_ls_20" 0
-    "bin_20" 0
-    "bin_25" 0
-    "bin_30" 0
-    "bin_35" 0
-    "bin_40" 0
-    "bin_45" 0
-    "bin_50" 0
-    "bin_55" 0
-    "bin_60" 0
-    "bin_65" 0
-    "bin_70" 0
-    "bin_75" 0
-    "bin_80" 0
-    "bin_mt_85" 0})
 
 (defn- calculate-population-for-gene [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
@@ -111,7 +94,6 @@
                           (let [age_bins_each_gene (map (fn [s] (js/parseInt s))
                                                         (keys (nth (get (get-parsed-response) "rows") 0)))
                                 age_frequencies_each_gene (vals (nth (get (get-parsed-response) "rows") 0))]
-                            (u/cljslog exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene age_bins_each_gene)
                             (cb exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene age_bins_each_gene gene-name))
                           )})))}))
 
@@ -213,9 +195,7 @@
                        :marker {:color ["FF9912" "#6AA5CD"
                                         "#ED1E24" "#002F6C"
                                         "#108C44" "#941494"
-                                        ]}
-
-                      }])
+                                        ]}}])
             (clj->js {
                       :xaxis {:autorange true
                               :showgrid false
@@ -282,14 +262,11 @@
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
                                (swap! state assoc :variants (get-parsed-response))
-
-                               #_(u/cljslog :variants (get-parsed-response))
+                               (let [hom_count (reduce + (map #(get %1 "hom_count") (get-parsed-response)))]
+                                 (u/cljslog hom_count "hom_count"))
+                               (swap! state assoc :hom_count (reduce + (map #(get %1 "hom_count") (get-parsed-response))))
                               )})))})))})
 
-
-(defn transform-vector-to-gene-label-map [m]
-  {:label (get m "gene")
-   :value (get m "gene")})
 
 
 ;component for search box
