@@ -141,7 +141,7 @@
           [:div {:style {:paddingLeft 60 :backgroundColor "white"}}
            [:div {:style {:paddingTop 20 :fontWeight "bold"}} "Population distribution"]
            [:div {:style {:marginTop 6 :height 1 :backgroundColor "#959A9E"}}]
-           [:div {:ref "population-plot" :style {:position "relative"
+           [:div {:ref "population-plot"  :style {:position "relative"
                          :height 300 :paddingTop 0}}]
              ]]]
         [:div {:style {:height 30}}]
@@ -204,31 +204,36 @@
                       :yaxis {:autorange true
                               :showgrid false
                               :autotick false}
-                      })))
+                      })
+           (clj->js {
+                     :displayModeBar false
+                    })))
 
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
      (.newPlot js/Plotly (@refs "group-plot")
-            (clj->js [{:type "bar"
-                       :name "All ExAC individuals"
-                       :x y1
-                       :y x1
-                       :marker {:color "47cccc"}}
-                      {:type "bar"
-                       :name  (str "LoF carriers in " (clojure.string/upper-case gene-name) )
-                       :x y2
-                       :y x2}])
-            (clj->js {
-                      :xaxis {:autorange true
-                               :showgrid false
-                               :title "Age" :titlefont {:size 14}}
-                      :yaxis {:autorange true
-                               :showgrid false
-                               :title "Frequency" :showticklabels false :titlefont {:size 14}}
-                      :legend {:x 0 :y 1.35 :bgcolor "rgba(255, 255, 255, 0)"}
-
-
-                      })))
+               (clj->js [{:type "bar"
+                          :name "All ExAC individuals"
+                          :x y1
+                          :y x1
+                          :marker {:color "47cccc"}}
+                         {:type "bar"
+                          :name  (str "LoF carriers in " (clojure.string/upper-case gene-name) )
+                          :x y2
+                          :y x2
+                          :displayModeBar false}])
+               (clj->js {
+                         :xaxis {:autorange true
+                                 :showgrid false
+                                 :title "Age" :titlefont {:size 14}}
+                         :yaxis {:autorange true
+                                 :showgrid false
+                                 :title "Frequency" :showticklabels false :titlefont {:size 14}}
+                         :legend {:x 0 :y 1.35 :bgcolor "rgba(255, 255, 255, 0)"}
+                         :displayModeBar false})
+               (clj->js {
+                         :displayModeBar false
+                         })))
    :render-plots
    (fn [{:keys [this props state refs]} gene-name]
      (calculate-population-for-gene
@@ -262,12 +267,7 @@
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
                                (swap! state assoc :variants (get-parsed-response))
-                               (let [hom_count (reduce + (map #(get %1 "hom_count") (get-parsed-response)))]
-                                 (u/cljslog hom_count "hom_count"))
-                               (swap! state assoc :hom_count (reduce + (map #(get %1 "hom_count") (get-parsed-response))))
                               )})))})))})
-
-
 
 ;component for search box
 (react/defc App
