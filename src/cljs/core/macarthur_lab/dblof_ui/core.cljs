@@ -97,19 +97,6 @@
                             (cb exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene age_bins_each_gene gene-name))
                           )})))}))
 
-(defn- create-variants-query [gene-id]
-  {:genes {:$in [gene-id]}
-   :filter "PASS"
-   :vep_annotations
-   {:$elemMatch
-    {:Gene gene-id
-     :LoF {:$ne ""}
-      }}})
-
-(def variants-projection
-  (reduce (fn [r col] (assoc r (:key col) 1)) {:vep_annotations 1} variant-table/columns))
-
-
 
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
@@ -163,7 +150,7 @@
          (if show-variants?
            [variant-table/Component (merge {:api-url-root api-url-root}
                                            (select-keys props [:gene-name])
-                                           (select-keys @state [:variants]))]
+                                           (select-keys @state [:variants :variants-v2]))]
            [literature/Component
             (merge {:api-url-root api-url-root
                     :on-loaded (fn [has-literature?]
@@ -246,7 +233,19 @@
    :load-variants-data
    (fn [{:keys [props state]} gene-name]
      (let [exec-mongo-url (str api-url-root "/exec-mongo")
+           exec-sql-url (str api-url-root "/exec-sql")
            gene-name-uc (clojure.string/upper-case gene-name)]
+       (u/ajax {:url exec-sql-url
+                :method :post
+                :data (u/->json-string
+                       {:sql (str
+                              "select * from variants v\n"
+                              "inner join gene_symbols gs on v.gene_id = gs.gene_id\n"
+                              "where gs.symbol = ? and Annotation in "
+                              "('splice acceptor', 'stop gained', 'splice donor', 'frameshift')")
+                        :params [gene-name-uc]})
+                :on-done (fn [{:keys [get-parsed-response]}]
+                           (swap! state assoc :variants-v2 (get (get-parsed-response) "rows")))})
        (u/ajax {:url exec-mongo-url
                 :method :post
                 :data (u/->json-string
@@ -260,13 +259,12 @@
                              :method :post
                              :data (u/->json-string
                                     {:collection-name "variants"
-                                     :query (create-variants-query gene-id)
-                                     :projection variants-projection
+                                     :query (variant-table/create-variants-query gene-id)
+                                     :projection variant-table/query-projection
                                      :options {:limit 10000}})
                              :on-done
                              (fn [{:keys [get-parsed-response]}]
-                               (swap! state assoc :variants (get-parsed-response))
-                              )})))})))})
+                               (swap! state assoc :variants (get-parsed-response)))})))})))})
 
 ;component for search box
 (react/defc App

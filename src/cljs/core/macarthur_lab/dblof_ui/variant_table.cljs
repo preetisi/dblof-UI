@@ -6,24 +6,27 @@
    ))
 
 
-(def columns [{:key :variant_id :label "Variant" :width "20%"
-               :format (fn [variant-id]
-                         [:a {:href (u/get-exac-variant-page-href variant-id)
+(def columns [{:label "Variant" :width "15%"
+               :format (fn [variant]
+                         [:a {:href (u/get-exac-variant-page-href variant)
                               :target "_blank"
                               :style {:textDecoration "none"}}
-                          variant-id])}
-              {:key :chrom :label "Chrom" :width "10%"}
-              {:key :pos :label "Position" :width "10%"}
-              {:key :filter :label "Filter" :width "10%"}
-              {:key :allele_count :label "Allele Count" :width "10%"}
-              {:key :allele_num :label "Allele Number" :width "10%"}
-              {:key :hom_count :label "Number of Homozygotes" :width "10%"}
-              {:key :allele_freq :label "Allele Frequency" :width "20%" :format #(.toFixed % 8)}
-              {:key :consequences :label "Consequences" :width "10%"}
+                          (str (get variant "Chrom") ":" (get variant "Position")
+                               " " (get variant "Reference") " / " (get variant "Alternate"))])}
+              {:key "Chrom" :label "Chrom" :width "6%"}
+              {:key "Position" :label "Position" :width "10%"}
+              {:key "Consequence" :label "Consequence" :width "12%"}
+              {:key "Filter" :label "Filter" :width "5%"}
+              {:key "Annotation" :label "Annotation" :width "10%"}
+              {:key "Flags" :label "Flags" :width "6%"}
+              {:key "Allele Count" :label "Allele Count" :width "6%"}
+              {:key "Allele Number" :label "Allele Number" :width "8%"}
+              {:key "Number of Homozygotes" :label "Number of Homozygotes" :width "11%"}
+              {:key "Allele Frequency" :label "Allele Frequency" :width "10%"}
             ])
 
 
-(defn- create-variants-query [gene-id]
+(defn create-variants-query [gene-id]
   {:genes {:$in [gene-id]}
    :filter "PASS"
    :vep_annotations
@@ -32,8 +35,10 @@
      :LoF {:$ne ""}}}})
 
 
-(def variants-projection
-  (reduce (fn [r col] (assoc r (:key col) 1)) {:vep_annotations 1} columns))
+(def query-projection
+  (reduce (fn [r k] (assoc r k 1))
+          {}
+          #{:id :pos :allele_count :allele_freq :vep_annotations}))
 
 
 (react/defc Component
@@ -43,20 +48,21 @@
       :sort-reversed? true})
    :render
    (fn [{:keys [props state]}]
-     (let [{:keys [variants]} props
+     (let [{:keys [variants-v2]} props
+           variants variants-v2
            {:keys [sort-column-key sort-reversed?]} @state]
        [:div {:style {:paddingTop 10 :fontSize "80%"}}
         [:div {:style {:display "flex" :alignItems "center" :fontWeight "bold"}}
          (map (fn [col]
                 [:div {:style {:flex (str "0 0 " (:width col)) :padding 10 :boxSizing "border-box"
-                               :cursor "pointer" :position "relative"}
+                               :cursor "pointer" :position "relative" :overflow "hidden"}
                        :onClick #(swap! state assoc
                                         :sort-column-key (:key col)
                                         :sort-reversed? (if (= (:key col) sort-column-key)
                                                           (not sort-reversed?)
                                                           false))}
                  (:label col)
-                 [:span {:style {:position "absolute" :paddingLeft 6
+                 [:span {:style {:position "absolute" :paddingLeft 2
                                  :color (when-not (= (:key col) sort-column-key) "#ccc")}}
                   (if (= (:key col) sort-column-key)
                     (if sort-reversed? "↑" "↓")
@@ -73,8 +79,9 @@
                            [:div {:style {:flex (str "0 0 " (:width col))
                                           :padding "6px 10px" :boxSizing "border-box"
                                           :overflow "hidden" :textOverflow "ellipsis"}}
-                            (let [format (or (:format col) identity)]
-                              (format (get x (name (:key col)))))])
+                            (let [value (if (contains? col :key) (get x (:key col)) x)
+                                  format (or (:format col) identity)]
+                              (format value))])
                          columns)])
                  (let [sorted (sort-by #(get % (name sort-column-key)) variants)]
                    (if sort-reversed? (reverse sorted) sorted))))]

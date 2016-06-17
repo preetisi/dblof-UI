@@ -86,5 +86,7 @@
             (.send xhr)))))))
 
 
-(defn get-exac-variant-page-href [variant-id]
-  (str "http://exac.broadinstitute.org/variant/" variant-id))
+(defn get-exac-variant-page-href [variant]
+  (str "http://exac.broadinstitute.org/variant/"
+       (str (get variant "Chrom") "-" (get variant "Position")
+            "-" (get variant "Reference") "-" (get variant "Alternate"))))
