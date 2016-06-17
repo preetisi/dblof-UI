@@ -44,7 +44,7 @@
 (react/defc Component
   {:get-initial-state
    (fn []
-     {:sort-column-key :variant_id
+     {:sort-column-key "Variant"
       :sort-reversed? true})
    :render
    (fn [{:keys [props state]}]
@@ -57,16 +57,16 @@
                 [:div {:style {:flex (str "0 0 " (:width col)) :padding 10 :boxSizing "border-box"
                                :cursor "pointer" :position "relative" :overflow "hidden"}
                        :onClick #(swap! state assoc
-                                        :sort-column-key (or (:key col) :variant)
-                                        :sort-reversed? (if (= (or (:key col) :variant)
+                                        :sort-column-key (or (:key col) "Variant")
+                                        :sort-reversed? (if (= (or (:key col) "Variant")
                                                                sort-column-key)
                                                           (not sort-reversed?)
                                                           false))}
                  (:label col)
                  [:span {:style {:position "absolute" :paddingLeft 2
-                                 :color (when-not (= (or (:key col) :variant) sort-column-key)
+                                 :color (when-not (= (or (:key col) "Variant") sort-column-key)
                                           "#ccc")}}
-                  (if (= (or (:key col) :variant) sort-column-key)
+                  (if (= (or (:key col) "Variant") sort-column-key)
                     (if sort-reversed? "↑" "↓")
                     "⇅")]])
               columns)]

@@ -253,7 +253,19 @@
                               "('splice acceptor', 'stop gained', 'splice donor', 'frameshift')")
                         :params [gene-name-uc]})
                 :on-done (fn [{:keys [get-parsed-response]}]
-                           (swap! state assoc :variants-v2 (get (get-parsed-response) "rows")))})
+                           (swap! state assoc
+                                  :variants-v2
+                                  (map (fn [v]
+                                         (assoc v
+                                                "Variant"
+                                                (str (v "Chrom") ":" (v "Position")
+                                                     " " (v "Reference") " / " (v "Alternate"))
+                                                "Allele Count" (js/parseInt (v "Allele Count"))
+                                                "Position" (js/parseInt (v "Position"))
+                                                "Allele Number" (js/parseInt (v "Allele Number"))
+                                                "Number of Homozygotes"
+                                                (js/parseInt (v "Number of Homozygotes"))))
+                                       (get (get-parsed-response) "rows"))))})
        (u/ajax {:url exec-mongo-url
                 :method :post
                 :data (u/->json-string
