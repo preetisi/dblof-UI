@@ -122,14 +122,22 @@
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex" :justifyContent "space-between"}}
          ;; group age plot
-         [:div {:ref "group-plot" :style {:flex "1 1 50%" :height 300}}]
+         [:div { :style {:flex "1 1 50%" :backgroundColor "white" :padding "20px 16px 0 16px"}}
+          [:div {:style {:fontWeight "bold"}} "Age distribution"]
+          [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
+          [:div {:style {:paddingLeft 60}}
+           [:div {:ref "group-plot"
+                  :style {:height 300 :paddingTop 0}}]]]
+
          [:div {:style {:flex "1 1 30px"}}]
+
          [:div {:style {:flex "1 1 50%" :backgroundColor "white" :padding "20px 16px 0 16px"}}
           [:div {:style {:fontWeight "bold"}} "Population distribution"]
           [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
           [:div {:style {:paddingLeft 60}}
            [:div {:ref "population-plot"
-                  :style {:position "relative" :height 300 :paddingTop 0}}]]]]
+                  :style {:height 300 :paddingTop 0}}]]]]
+
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex"}}
          [:div {:style {:flex "0 0 50%"
