@@ -57,14 +57,16 @@
                 [:div {:style {:flex (str "0 0 " (:width col)) :padding 10 :boxSizing "border-box"
                                :cursor "pointer" :position "relative" :overflow "hidden"}
                        :onClick #(swap! state assoc
-                                        :sort-column-key (:key col)
-                                        :sort-reversed? (if (= (:key col) sort-column-key)
+                                        :sort-column-key (or (:key col) :variant)
+                                        :sort-reversed? (if (= (or (:key col) :variant)
+                                                               sort-column-key)
                                                           (not sort-reversed?)
                                                           false))}
                  (:label col)
                  [:span {:style {:position "absolute" :paddingLeft 2
-                                 :color (when-not (= (:key col) sort-column-key) "#ccc")}}
-                  (if (= (:key col) sort-column-key)
+                                 :color (when-not (= (or (:key col) :variant) sort-column-key)
+                                          "#ccc")}}
+                  (if (= (or (:key col) :variant) sort-column-key)
                     (if sort-reversed? "↑" "↓")
                     "⇅")]])
               columns)]
