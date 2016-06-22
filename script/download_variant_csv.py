@@ -13,7 +13,7 @@ logger = logging.getLogger()
 
 
 
-gene_id = "ENSG00000245105"
+#gene_id = "ENSG00000245105"
 
 
 def log(message):
