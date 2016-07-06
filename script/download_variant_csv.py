@@ -7,14 +7,8 @@ from selenium.webdriver.common.by import By
 import tqdm
 wd = webdriver.Chrome()
 wd.implicitly_wait(3)     # wait up to this many seconds for pages to load
-
 logging.basicConfig(format='%(asctime)-15s: %(message)s', level=logging.INFO)
 logger = logging.getLogger()
-
-
-
-#gene_id = "ENSG00000245105"
-
 
 def log(message):
     logger.info("---> " + message)
@@ -56,11 +50,3 @@ with open('gene_id.tsv') as csvfile:
             button_elem.click()
         except Exception as e:
             continue
-
-
-
-
-#print("Finished downloading %d file" % (i + 1))
-
-
-#url_get(wd, base_url)
