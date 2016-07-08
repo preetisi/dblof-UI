@@ -98,6 +98,15 @@
                           )})))}))
 
 
+(defn- plot [title ref-name]
+  [:div { :style {:flex "1 1 50%" :backgroundColor "white" :padding "20px 16px 0 16px"}}
+   [:div {:style {:fontWeight "bold"}} title]
+   [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
+   [:div {:style {:paddingLeft 60}}
+    [:div {:ref ref-name
+           :style {:height 300 :paddingTop 0}}]]])
+
+
 ; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
   {:get-initial-state
@@ -121,23 +130,9 @@
                              (select-keys @state [:variants]))]
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex" :justifyContent "space-between"}}
-         ;; group age plot
-         [:div { :style {:flex "1 1 50%" :backgroundColor "white" :padding "20px 16px 0 16px"}}
-          [:div {:style {:fontWeight "bold"}} "Age distribution"]
-          [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
-          [:div {:style {:paddingLeft 60}}
-           [:div {:ref "group-plot"
-                  :style {:height 300 :paddingTop 0}}]]]
-
+         (plot "Age distribution" "group-plot")
          [:div {:style {:flex "1 1 30px"}}]
-
-         [:div {:style {:flex "1 1 50%" :backgroundColor "white" :padding "20px 16px 0 16px"}}
-          [:div {:style {:fontWeight "bold"}} "Population distribution"]
-          [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
-          [:div {:style {:paddingLeft 60}}
-           [:div {:ref "population-plot"
-                  :style {:height 300 :paddingTop 0}}]]]]
-
+         (plot "Population distribution" "population-plot")]
         [:div {:style {:height 30}}]
         [:div {:style {:display "flex"}}
          [:div {:style {:flex "0 0 50%"
