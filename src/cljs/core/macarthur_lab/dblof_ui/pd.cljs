@@ -2,6 +2,7 @@
   (:require
    clojure.string
    [dmohs.react :as react]
+   [macarthur-lab.dblof-ui.style :as style]
    [macarthur-lab.dblof-ui.utils :as u]
    ))
 
@@ -56,7 +57,6 @@
      (let [last-segment (last segments)]
        {:exon? false :start (inc (:start last-segment)) :size 100}))))
 
-
 (react/defc Component
   {:render
    (fn [{:keys [props state]}]
@@ -73,8 +73,7 @@
                       (create-segments (sort-by #(get % "start") data)
                                        (sort-by :position variants)))]
        [:div {:style {:backgroundColor "white" :padding "20px 16px"}}
-        [:div {:style {:fontWeight "bold"}} "Positional distribution"]
-        [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
+        (style/create-underlined-title "Positional distribution")
         [:div {:style {:height 150 :position :relative
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          [:div {:style {:height 1 :backgroundColor "#ccc"

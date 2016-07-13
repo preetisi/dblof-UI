@@ -6,6 +6,7 @@
    [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.search-area :as search-area]
    [macarthur-lab.dblof-ui.stats-box :as stats-box]
+   [macarthur-lab.dblof-ui.style :as style]
    [macarthur-lab.dblof-ui.utils :as u]
    [macarthur-lab.dblof-ui.variant-table :as variant-table]
    ))
@@ -17,7 +18,7 @@
 (defonce genes-atom (atom nil))
 
 
-;if this ajax call fails -> Show error message to user
+;;if this ajax call fails -> Show error message to user
 (when-not @genes-atom
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
@@ -100,8 +101,7 @@
 
 (defn- plot [title ref-name]
   [:div { :style {:flex "1 1 50%" :backgroundColor "white" :padding "20px 16px 0 16px"}}
-   [:div {:style {:fontWeight "bold"}} title]
-   [:div {:style {:marginTop 8 :height 1 :backgroundColor "#959A9E"}}]
+   (style/create-underlined-title title)
    [:div {:style {:paddingLeft 60}}
     [:div {:ref ref-name
            :style {:height 300 :paddingTop 0}}]]])
@@ -281,7 +281,7 @@
                              (fn [{:keys [get-parsed-response]}]
                                (swap! state assoc :variants (get-parsed-response)))})))})))})
 
-;component for search box
+;;component for search box
 (react/defc App
   {:get-initial-state
    (fn [] {:hash (get-window-hash)})
