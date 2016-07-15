@@ -4,6 +4,7 @@
    [dmohs.react :as react]
    [macarthur-lab.dblof-ui.literature :as literature]
    [macarthur-lab.dblof-ui.pd :as pd]
+   [macarthur-lab.dblof-ui.pd2 :as pd2]
    [macarthur-lab.dblof-ui.search-area :as search-area]
    [macarthur-lab.dblof-ui.stats-box :as stats-box]
    [macarthur-lab.dblof-ui.style :as style]
@@ -111,7 +112,11 @@
 (react/defc GeneInfo
   {:get-initial-state
    (fn []
-     {:auto-select-variants? true})
+     {:auto-select-variants? true
+      ;; setting this.state to what was stored in sessionStorage so it maintains with refresh
+      :show-canvas? (if (= (.getItem (aget js/window "sessionStorage") "show-canvas?") "true")
+                      true
+                      false)})
    :render
    (fn [{:keys [this props state]}]
      (let [{:keys [gene-name]} props
@@ -129,6 +134,12 @@
                              (select-keys props [:gene-name])
                              (select-keys @state [:variants]))]
         [:div {:style {:height 30}}]
+        (when (get @state :show-canvas?) ; if :show-canvas? is true, show pd2 div
+          [:div {}
+           [pd2/Component (merge {:api-url-root api-url-root}
+                                 (select-keys props [:gene-name])
+                                 (select-keys @state [:variants]))]
+           [:div {:style {:height 30}}]])
         [:div {:style {:display "flex" :justifyContent "space-between"}}
          (plot "Age distribution" "group-plot")
          [:div {:style {:flex "1 1 30px"}}]
@@ -164,9 +175,11 @@
                    (select-keys props [:gene-name]))])]
         [:div {:style {:height 50}}]]))
    :component-did-mount
-   (fn [{:keys [this props]}]
+   (fn [{:keys [this state props]}]
      (this :render-plots (:gene-name props))
-     (this :load-variants-data (:gene-name props)))
+     (this :load-variants-data (:gene-name props))
+     (aset js/window "showCanvas" (fn [] (swap! state assoc :show-canvas? true)))
+     (aset js/window "hideCanvas" (fn [] (swap! state assoc :show-canvas? false))))
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]
      (when-not (apply = (map :gene-name [props next-props]))
@@ -174,6 +187,10 @@
        (swap! state assoc :auto-select-variants? true)
        (this :render-plots (:gene-name next-props))
        (this :load-variants-data (:gene-name next-props))))
+   :component-did-update
+   (fn [{:keys [state]}]
+     ;; persist the value of :show-canvas? into "show-canvas?" key of session storage
+     (.setItem (aget js/window "sessionStorage") "show-canvas?" (str (get @state :show-canvas?))))
    :build-each-gene-pop-plot
    (fn [{:keys [this refs state props]} x y gene-name]
      (.newPlot js/Plotly (@refs "population-plot")
