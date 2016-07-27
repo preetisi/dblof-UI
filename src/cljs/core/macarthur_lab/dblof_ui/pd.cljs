@@ -73,20 +73,22 @@
                       (create-segments (sort-by #(get % "start") data)
                                        (sort-by :position variants))
                       )
-           reversed? (when (get (nth data 1) "exon_number") > (get (last data) "exon_number")
+           reversed? (when (get (nth (sort-by #(get % "start") data) 1) "exon_number") <
+                       (get (last (sort-by #(get % "start") data)) "exon_number")
                        true)
            ]
-       (u/cljslog (get (nth data 1) "exon_number"))
-       (u/cljslog (get (last data) "exon_number"))
+       (u/cljslog (get (nth (sort-by #(get % "start") data) 1) "exon_number"))
+       (u/cljslog (get (last (sort-by #(get % "start") data)) "exon_number"))
        [:div {:style {:backgroundColor "white" :padding "20px 16px"}}
         (style/create-underlined-title "Positional distribution")
         [:div {:style {:height 150 :position :relative
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          (when reversed?
          [:div {:style {:height 1 :backgroundColor "#ccc"
-                        :position "absolute" :width "100%" :bottom 30}} "←"]
-         [:div {:style {:height 1 :backgroundColor "#ccc"
-                        :position "absolute" :width "100%" :bottom 30}} "→"])
+                        :position "absolute" :width "100%" :bottom 30}} "←-----"]
+        )
+        [:div {:style {:height 1 :backgroundColor "#ccc"
+                       :position "absolute" :width "100%" :bottom 30}} "----→"]
 
          [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
                         :display "flex"}}
