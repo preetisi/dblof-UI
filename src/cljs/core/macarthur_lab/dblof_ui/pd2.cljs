@@ -3,15 +3,14 @@
    clojure.string
    [dmohs.react :as react]
    [macarthur-lab.dblof-ui.utils :as u]
+   cljsjs.three
    ))
-
 
 (defn create-shader [gl str type-name]
   (let [shader (.createShader gl (aget gl type-name))]
     (.shaderSource gl shader str)
     (.compileShader gl shader)
     shader))
-
 
 (defn create-program [gl vstr fstr]
   (let [program (.createProgram gl)

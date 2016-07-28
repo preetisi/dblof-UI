@@ -4,6 +4,7 @@
    [dmohs/react "1.0.2+15.0.2"]
    [org.clojure/clojure "1.8.0"]
    [org.clojure/clojurescript "1.8.51"]
+   [cljsjs/three "0.0.76-0"]
    ]
   :plugins [[lein-cljsbuild "1.1.3"] [lein-resource "15.10.2"]]
   :profiles {:dev {:plugins [[lein-figwheel "0.5.3" :exclusions [org.clojure/clojure]]]
@@ -32,5 +33,5 @@
                                 :compiler {:output-dir "resources/public/build"
                                            :asset-path "build"
                                            :output-to "resources/public/compiled.js"}}}}
-  :resource {:resource-paths ["src/static" "lib/github-markdown" "lib/plotly"]
+  :resource {:resource-paths ["src/static" "lib/github-markdown" "lib/plotly" "lib/TrackballControls"]
              :skip-stencil [#".*"]})
