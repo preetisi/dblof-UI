@@ -84,8 +84,9 @@
         [:div {:style {:height 150 :position :relative
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          (if reversed?
-         [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "20px" :fontWeight "bolder"
-                      :position "absolute" :width "100%" :bottom 30 :left -10}} "←"]
+         [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "25px" :fontWeight "bolder"
+                      :textShadow "2px 0"  
+                      :position "absolute" :width "100%" :bottom 30 :left -20}} "←"]
          [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "20px" :fontWeight "bolder"
                         :position "absolute" :width "100%" :bottom 30 :left -20}} "→"]
            )
