@@ -85,10 +85,9 @@
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          (if reversed?
          [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "25px" :fontWeight "bolder"
-                      :textShadow "2px 0"  
-                      :position "absolute" :width "100%" :bottom 30 :left -20}} "←"]
+                        :textShadow "3px 0" :position "absolute" :width "100%" :bottom 30 :left -20}} "←"]
          [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "20px" :fontWeight "bolder"
-                        :position "absolute" :width "100%" :bottom 30 :left -20}} "→"]
+                        :textShadow "3px 0" :position "absolute" :width "100%" :bottom 30 :left -20}} "→"]
            )
 
          [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
