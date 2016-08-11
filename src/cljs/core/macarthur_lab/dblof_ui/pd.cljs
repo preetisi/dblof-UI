@@ -71,13 +71,25 @@
                          variants)
            segments (when (and data variants)
                       (create-segments (sort-by #(get % "start") data)
-                                       (sort-by :position variants)))]
-       [:div {:style {:backgroundColor "white" :padding "20px 16px"}}
+                                       (sort-by :position variants))
+                      )
+           reversed? (when (< (get (nth (sort-by #(get % "start") data) 1) "exon_number")
+                              (get (last (sort-by #(get % "start") data)) "exon_number"))
+                       true)
+           ]
+       (u/cljslog (get (nth (sort-by #(get % "start") data) 1) "exon_number"))
+       (u/cljslog (get (last (sort-by #(get % "start") data)) "exon_number"))
+       [:div {:style {:backgroundColor "white" :padding "20px 16px 20px 32px"}}
         (style/create-underlined-title "Positional distribution")
         [:div {:style {:height 150 :position :relative
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
-         [:div {:style {:height 1 :backgroundColor "#ccc"
-                        :position "absolute" :width "100%" :bottom 30}}]
+         (if reversed?
+         [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "20px" :fontWeight "bolder"
+                      :position "absolute" :width "100%" :bottom 30 :left -10}} "←"]
+         [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "20px" :fontWeight "bolder"
+                        :position "absolute" :width "100%" :bottom 30 :left -20}} "→"]
+           )
+
          [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
                         :display "flex"}}
           (map
@@ -98,7 +110,7 @@
      (u/ajax {:url (str (:api-url-root props) "/exec-sql")
               :method :post
               :data (u/->json-string
-                     {:sql (str "select start, stop-start size from gene_exons_v2 e\n"
+                     {:sql (str "select start, stop-start size, exon_number from gene_exons_v2 e\n"
                                 "inner join gene_symbols s on e.gene_id=s.gene_id\n"
                                 "where s.symbol=?")
                       :params [(clojure.string/upper-case gene-name)]})
