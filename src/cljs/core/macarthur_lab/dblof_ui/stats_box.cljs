@@ -48,9 +48,13 @@
                             " (select (n_lof / exp_lof) * 100 from constraint_scores"
                             " where gene = ?) as `lof-ratio`,"
                             " (select cast(pli as decimal(10,2)) from constraint_scores where gene = ?) as `pli`,"
-                            " (select sum(ac_hom) from variant_annotation"
-                            " where symbol = ? and lof = 'HC') as `homozygotes-count`,"
-                            " (select caf from gene_CAF where symbol = ?) as `cumulative-af`;")
+                            " (select sum(`Number of Homozygotes`) from variants v"
+                            " inner join gene_symbols gs on v.gene_id = gs.gene_id"
+                            " where gs.symbol = ? and Annotation in ('splice acceptor', 'stop gained',"
+                            " 'splice donor', 'frameshift')) as `homozygotes-count`,"
+                            " (select sum(`Allele Frequency`) from variants v inner join gene_symbols"
+                            " gs on v.gene_id = gs.gene_id where gs.symbol = ? and "
+                            " Annotation in ('splice acceptor', 'stop gained', 'splice donor', 'frameshift')) as `cumulative-af`;")
                       :params (repeat 4 gene-name)})
               :on-done (fn [{:keys [get-parsed-response]}]
                          (let [gene-info (first (get (get-parsed-response) "rows"))]
