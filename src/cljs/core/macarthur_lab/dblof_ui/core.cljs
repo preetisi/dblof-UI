@@ -69,9 +69,8 @@
            :method :post
            :data (u/->json-string
                   {:sql (str
-                         "select `age-bins`, `exac-age-frequency` from trunctated_norm_age order by `age-bins`"
-                         )
-                   })
+                         "select `age-bins`, `exac-age-frequency` from "
+                         "trunctated_norm_age order by `age-bins`")})
            :on-done
            (fn [{:keys [get-parsed-response]}]
              (let [exac-age-frequency-g1 (map (fn [m] (get m "exac-age-frequency"))
@@ -99,7 +98,6 @@
                             (cb exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene age_bins_each_gene gene-name))
                           )})))}))
 
-
 (defn- plot [title ref-name]
   [:div { :style {:flex "1 1 50%" :backgroundColor "white" :padding "20px 16px 0 16px"}}
    (style/create-underlined-title title)
@@ -107,8 +105,7 @@
     [:div {:ref ref-name
            :style {:height 300 :paddingTop 0}}]]])
 
-
-; this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
+;;this component is rendered when "hash" is not nill (when someone clicks on one of the gene link)
 (react/defc GeneInfo
   {:get-initial-state
    (fn []
@@ -214,7 +211,6 @@
            (clj->js {
                      :displayModeBar false
                     })))
-
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
      (.newPlot js/Plotly (@refs "group-plot")
