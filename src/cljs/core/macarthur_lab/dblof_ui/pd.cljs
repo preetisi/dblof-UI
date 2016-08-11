@@ -50,10 +50,9 @@
                              :variants (filter #(and (>= (:position %) start)
                                                      (<= (:position %) (+ start size)))
                                                sorted-variants)})))
-                  []
-                  sorted-exons)]
+                              sorted-exons)]
     (conj
-     segments
+    segments
      (let [last-segment (last segments)]
        {:exon? false :start (inc (:start last-segment)) :size 100}))))
 
@@ -71,25 +70,19 @@
                          variants)
            segments (when (and data variants)
                       (create-segments (sort-by #(get % "start") data)
-                                       (sort-by :position variants))
-                      )
+                                       (sort-by :position variants)))
            reversed? (when (< (get (nth (sort-by #(get % "start") data) 1) "exon_number")
                               (get (last (sort-by #(get % "start") data)) "exon_number"))
-                       true)
-           ]
-       (u/cljslog (get (nth (sort-by #(get % "start") data) 1) "exon_number"))
-       (u/cljslog (get (last (sort-by #(get % "start") data)) "exon_number"))
+                       true)]
        [:div {:style {:backgroundColor "white" :padding "20px 16px 20px 32px"}}
         (style/create-underlined-title "Positional distribution")
         [:div {:style {:height 150 :position :relative
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          (if reversed?
-         [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "25px" :fontWeight "bolder"
-                        :textShadow "3px 0" :position "absolute" :width "100%" :bottom 30 :left -20}} "←"]
-         [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "20px" :fontWeight "bolder"
-                        :textShadow "3px 0" :position "absolute" :width "100%" :bottom 30 :left -20}} "→"]
-           )
-
+           [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "25px" :fontWeight "bolder"
+                          :textShadow "3px 0" :position "absolute" :width "100%" :bottom 30 :left -20}} "←"]
+           [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "25px" :fontWeight "bolder"
+                          :textShadow "3px 0" :position "absolute" :width "100%" :bottom 30 :left -20}} "→"])
          [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
                         :display "flex"}}
           (map
