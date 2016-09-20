@@ -13,12 +13,9 @@
    [macarthur-lab.dblof-ui.variant-table :as variant-table]
    ))
 
-
 (def api-url-root "http://api.staging.dblof.broadinstitute.org")
 
-
 (defonce genes-atom (atom nil))
-
 
 ;;if this ajax call fails -> Show error message to user
 (when-not @genes-atom
@@ -30,7 +27,6 @@
                               (map clojure.string/lower-case
                                    (map #(get % "gene")
                                         (get (get-parsed-response) "rows")))))}))
-
 
 (defn- get-gene-name-from-window-hash [window-hash]
   (assert (string? window-hash))
@@ -63,7 +59,6 @@
                       (let [population_frequencies (keys (merge default-map1 (nth (get (get-parsed-response) "rows") 0)))
                             population_category (vals (merge default-map1 (nth (get (get-parsed-response) "rows") 0)))]
                         (cb population_frequencies population_category)))}))
-
 
 (defn- calculate-exac-group-age [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
@@ -116,8 +111,8 @@
                       true
                       false)
       :show-three? (if (= (.getItem (aget js/window "sessionStorage") "show-three?") "true")
-                      true
-                      false)})
+                     true
+                     false)})
    :render
    (fn [{:keys [this props state]}]
      (let [{:keys [gene-name]} props
@@ -133,18 +128,19 @@
         [:div {:style {:height 30}}]
         [pd/Component (merge {:api-url-root api-url-root}
                              (select-keys props [:gene-name])
-                             (select-keys @state [:variants]))]
+                             (select-keys @state [:variants])
+                             (select-keys @state [:variants-v2]))]
         [:div {:style {:height 30}}]
         (when (get @state :show-canvas?) ; if :show-canvas? is true, show pd2 div
           [:div {}
            [pd2/Component (merge {:api-url-root api-url-root}
                                  (select-keys props [:gene-name])
-                                 (select-keys @state [:variants]))]
+                                 (select-keys @state [:variants-v2]))]
            [:div {:style {:height 30}}]])
         (when (get @state :show-three?) ;if :show-three? is true, show three-experiment div
           [:div {} [three-experiment/Component (merge {:api-url-root api-url-root}
                                                        (select-keys props [:gene-name])
-                                                       (select-keys @state [:variants]))]
+                                                       (select-keys @state [:variants-v2]))]
            [:div {:style {:height 30}}]])
         [:div {:style {:display "flex" :justifyContent "space-between"}}
          (plot "Age distribution" "group-plot")
@@ -212,18 +208,14 @@
                                         "#ED1E24" "#002F6C"
                                         "#108C44" "#941494"
                                         ]}}])
-            (clj->js {
-                      :xaxis {:autorange true
+            (clj->js {:xaxis {:autorange true
                               :showgrid false
                               :showticklabels false
                               :title "Frequency" :titlefont {:size 14}}
                       :yaxis {:autorange true
                               :showgrid false
-                              :autotick false}
-                      })
-           (clj->js {
-                     :displayModeBar false
-                    })))
+                              :autotick false}})
+           (clj->js {:displayModeBar false})))
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
      (.newPlot js/Plotly (@refs "group-plot")
@@ -237,8 +229,7 @@
                           :x y2
                           :y x2
                           :displayModeBar false}])
-               (clj->js {
-                         :xaxis {:autorange true
+               (clj->js {:xaxis {:autorange true
                                  :showgrid false
                                  :title "Age" :titlefont {:size 14}}
                          :yaxis {:autorange true
@@ -246,9 +237,7 @@
                                  :title "Frequency" :showticklabels false :titlefont {:size 14}}
                          :legend {:x 0 :y 1.35 :bgcolor "rgba(255, 255, 255, 0)"}
                          :displayModeBar false})
-               (clj->js {
-                         :displayModeBar false
-                         })))
+               (clj->js {:displayModeBar false})))
    :render-plots
    (fn [{:keys [this props state refs]} gene-name]
      (calculate-population-for-gene
@@ -283,30 +272,9 @@
                                                      " " (v "Reference") " / " (v "Alternate"))
                                                 "Allele Count" (js/parseInt (v "Allele Count"))
                                                 "Position" (js/parseInt (v "Position"))
-                                                "Allele Number" (js/parseInt (v "Allele Number"))
                                                 "Number of Homozygotes"
                                                 (js/parseInt (v "Number of Homozygotes"))))
-                                       (get (get-parsed-response) "rows"))))})
-       (u/ajax {:url exec-mongo-url
-                :method :post
-                :data (u/->json-string
-                       {:collection-name "genes"
-                        :query {:gene_name_upper {:$eq gene-name-uc}}
-                        :projection {:gene_id 1}})
-                :on-done
-                (fn [{:keys [get-parsed-response]}]
-                  (let [gene-id (get-in (get-parsed-response) [0 "gene_id"])]
-                    (u/ajax {:url exec-mongo-url
-                             :method :post
-                             :data (u/->json-string
-                                    {:collection-name "variants"
-                                     :query (variant-table/create-variants-query gene-id)
-                                     :projection variant-table/query-projection
-                                     :options {:limit 10000}})
-                             :on-done
-                             (fn [{:keys [get-parsed-response]}]
-                               (swap! state assoc :variants (get-parsed-response)))})))})))})
-
+                                       (get (get-parsed-response) "rows"))))})))})
 ;;component for search box
 (react/defc App
   {:get-initial-state

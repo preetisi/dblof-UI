@@ -5,7 +5,6 @@
    [macarthur-lab.dblof-ui.utils :as u]
    ))
 
-
 (react/defc Component
   {:render
    (fn [{:keys [state]}]

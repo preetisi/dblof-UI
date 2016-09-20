@@ -6,8 +6,7 @@
    [macarthur-lab.dblof-ui.utils :as u]
    ))
 
-
-(defn- create-frequencies [exon-start exon-end variants]
+(defn- create-frequencies-v2 [exon-start exon-end variants]
   (let [sizes (reduce
                (fn [r p]
                  (conj r (- p (apply + exon-start r))))
@@ -31,7 +30,6 @@
                          :backgroundColor "rgba(36,175,178,0.5)"}}]]))
        variants))]))
 
-
 (defn- create-segments [sorted-exons sorted-variants]
   (let [segments (reduce
                   (fn [r {:strs [start size]}]
@@ -50,48 +48,46 @@
                              :variants (filter #(and (>= (:position %) start)
                                                      (<= (:position %) (+ start size)))
                                                sorted-variants)})))
-                              sorted-exons)]
-    (conj
-    segments
+                  []
+                  sorted-exons)]
+    (conj segments
      (let [last-segment (last segments)]
        {:exon? false :start (inc (:start last-segment)) :size 100}))))
 
 (react/defc Component
   {:render
    (fn [{:keys [props state]}]
-     (let [{:keys [variants]} props
+     (let [{:keys [variants-v2]} props
            {:keys [status]} @state
            {:keys [code data]} status
            variants (map (fn [v]
-                           {:id (get v "variant_id")
-                            :position (get v "pos")
-                            :allele-count (get v "allele_count")
-                            :allele-freq (get v "allele_freq")})
-                         variants)
+                           {:id (get v "Variant")
+                            :position (get v "Position")
+                            :allele-count (get v "Allele Count")
+                            :allele-freq (get v "Allele Frequency")})
+                         variants-v2)
            segments (when (and data variants)
                       (create-segments (sort-by #(get % "start") data)
-                                       (sort-by :position variants))
-                      )
+                                       (sort-by #(get % "Position") variants)))
            reversed? (when (< (get (nth (sort-by #(get % "start") data) 1) "exon_number")
                               (get (last (sort-by #(get % "start") data)) "exon_number"))
                        true)]
-
        [:div {:style {:backgroundColor "white" :padding "20px 16px 20px 32px"}}
         (style/create-underlined-title "Positional distribution")
         [:div {:style {:height 150 :position :relative
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          (if reversed?
            [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "25px" :fontWeight "bolder"
-                          :textShadow "3px 0" :position "absolute" :width "100%" :bottom 30 :left -20}} "←"]
+                          :position "absolute" :width "100%" :bottom 30 :left -20}} "←"]
            [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "25px" :fontWeight "bolder"
-                          :textShadow "3px 0" :position "absolute" :width "100%" :bottom 30 :left -20}} "→"])
+                          :position "absolute" :width "100%" :bottom 30 :left -20}} "→"])
          [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
                         :display "flex"}}
           (map
            (fn [{:keys [exon? start size variants]}]
              [:div {:style {:flex (str (if exon? size 10) " " (if exon? size 10) " auto")
                             :backgroundColor (when exon? "#333")}}
-              (create-frequencies start (+ start size) variants)])
+              (create-frequencies-v2 start (+ start size) variants)])
            segments)]]]))
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]
