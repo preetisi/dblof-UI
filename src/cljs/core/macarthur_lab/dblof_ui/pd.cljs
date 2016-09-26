@@ -6,7 +6,7 @@
    [macarthur-lab.dblof-ui.utils :as u]
    ))
 
-(defn- create-frequencies-v2 [exon-start exon-end variants]
+(defn- create-frequencies [exon-start exon-end variants]
   (let [sizes (reduce
                (fn [r p]
                  (conj r (- p (apply + exon-start r))))
@@ -24,7 +24,7 @@
                      (<= (:allele-freq v) 0.01) 3
                      :else 4)]
            [:div {:style {:flex "1 1 1" :position "relative"}}
-            [:a {:href (u/get-exac-variant-page-href (:id v))
+            [:a {:href (u/get-exac-variant-page-href (:chrom v)(:pos v)(:ref v)(:alt v))
                  :target "_blank"
                  :style {:position "absolute" :bottom 4 :height (* bin 20) :width 3
                          :backgroundColor "rgba(36,175,178,0.5)"}}]]))
@@ -57,15 +57,20 @@
 (react/defc Component
   {:render
    (fn [{:keys [props state]}]
-     (let [{:keys [variants-v2]} props
+     (let [{:keys [variants]} props
            {:keys [status]} @state
            {:keys [code data]} status
            variants (map (fn [v]
                            {:id (get v "Variant")
                             :position (get v "Position")
                             :allele-count (get v "Allele Count")
-                            :allele-freq (get v "Allele Frequency")})
-                         variants-v2)
+                            :allele-freq (get v "Allele Frequency")
+                            :chrom (get v "Chrom")
+                            :pos (get v "Position")
+                            :ref (get v "Reference")
+                            :alt (get v "Alternate")})
+                         variants)
+
            segments (when (and data variants)
                       (create-segments (sort-by #(get % "start") data)
                                        (sort-by #(get % "Position") variants)))
@@ -87,7 +92,7 @@
            (fn [{:keys [exon? start size variants]}]
              [:div {:style {:flex (str (if exon? size 10) " " (if exon? size 10) " auto")
                             :backgroundColor (when exon? "#333")}}
-              (create-frequencies-v2 start (+ start size) variants)])
+              (create-frequencies start (+ start size) variants)])
            segments)]]]))
    :component-will-receive-props
    (fn [{:keys [this props state next-props]}]

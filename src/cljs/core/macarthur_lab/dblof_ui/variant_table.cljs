@@ -5,26 +5,36 @@
    [macarthur-lab.dblof-ui.utils :as u]
    ))
 
-
 (def columns [{:label "Variant" :width "15%"
                :format (fn [variant]
-                         [:a {:href (u/get-exac-variant-page-href variant)
+                         [:a {:href (u/get-exac-variant-page-href
+                                     (get variant "Chrom") (get variant "Position")
+                                     (get variant "Reference") (get variant "Alternate"))
                               :target "_blank"
                               :style {:textDecoration "none"}}
                           (str (get variant "Chrom") ":" (get variant "Position")
-                               " " (get variant "Reference") " / " (get variant "Alternate"))])}
+                           " " (get variant "Reference") " / " (get variant "Alternate"))])}
               {:key "Chrom" :label "Chrom" :width "6%"}
               {:key "Position" :label "Position" :width "10%"}
               {:key "Consequence" :label "Consequence" :width "12%"}
-              {:key "Filter" :label "Filter" :width "5%"}
               {:key "Annotation" :label "Annotation" :width "10%"}
-              {:key "Flags" :label "Flags" :width "6%"}
+              {:label "Flags" :width "7%"
+               :format (fn [variant]
+                         [:span { :style {:backgroundColor "#e62e00" :color "#f2f2f2"
+                                          :fontWeight "normal" :paddingTop "2px"
+                                          :paddingBottom "2px" :borderRadius "4px"}}
+                          (cond
+                           (identical? (get variant "Manual Annotation") "no") "Manual"
+                           (not (clojure.string/blank? (get variant "Flags"))) "LOFTEE"
+                           (not (identical? (get variant "Manual Annotation") "no")) ""
+                           (clojure.string/blank? (get variant "Flags")) ""
+                           )])}
               {:key "Allele Count" :label "Allele Count" :width "6%"}
               {:key "Allele Number" :label "Allele Number" :width "8%"}
               {:key "Number of Homozygotes" :label "Number of Homozygotes" :width "11%"}
               {:key "Allele Frequency" :label "Allele Frequency" :width "10%"}
+              {:key "Manual Annotation" :label "Manual Annotation" :width "10%"}
             ])
-
 
 (defn create-variants-query [gene-id]
   {:genes {:$in [gene-id]}
@@ -34,12 +44,10 @@
     {:Gene gene-id
      :LoF {:$ne ""}}}})
 
-
 (def query-projection
   (reduce (fn [r k] (assoc r k 1))
           {}
           #{:id :pos :allele_count :allele_freq :vep_annotations}))
-
 
 (react/defc Component
   {:get-initial-state
@@ -48,8 +56,7 @@
       :sort-reversed? true})
    :render
    (fn [{:keys [props state]}]
-     (let [{:keys [variants-v2]} props
-           variants variants-v2
+     (let [{:keys [variants]} props
            {:keys [sort-column-key sort-reversed?]} @state]
        [:div {:style {:paddingTop 10 :fontSize "80%"}}
         [:div {:style {:display "flex" :alignItems "center" :fontWeight "bold"}}

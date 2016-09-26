@@ -29,7 +29,8 @@
    (fn [{:keys [props state]}]
      (let [{:keys [on-item-selected]} props
            {:keys [results selected-index]} @state]
-       (when on-item-selected
+       ((:on-empty-results props) (empty? results))
+       (when (and (not (empty? results)) on-item-selected)
          (on-item-selected (nth results selected-index)))))
    :render
    (fn [{:keys [this props state]}]
@@ -65,12 +66,17 @@
                          (swap! state assoc :results results :selected-index 0)))
                      100)))))))})
 
-
 (react/defc SearchBox
-  {:render
-   (fn [{:keys [props state refs]}]
+  {:get-initial-state
+   (fn []
+     {:empty-search? false})
+   :empty-search
+   (fn [{:keys [state]} is-search-empty]
+     (swap! state assoc :empty-search? is-search-empty))
+   :render
+   (fn [{:keys [props state refs this]}]
      (let [{:keys [compact?]} props
-           {:keys [gene-names search-text suggestion focused?]} @state]
+           {:keys [gene-names search-text suggestion focused? empty-search?]} @state]
        [:div {:onFocus #(swap! state assoc :focused? true)
               :onBlur (fn [e] (js/setTimeout #(swap! state dissoc :focused?) 100))}
         [:div {:style {:fontSize "large"}}
@@ -105,6 +111,7 @@
             :search-text search-text
             :create-href (fn [item] (str "#genes/" item))
             :on-item-selected (fn [item] (aset js/window "location" "hash" (str "genes/" item)))
+            :on-empty-results #(react/call :empty-search this %1)
             :style {:container
                     {:width 310
                      :border "1px solid #ccc"
@@ -116,7 +123,10 @@
            "Examples - Gene: "
            [:a {:href "#genes/cd33"
                 :style {:color "#CEF4F3" :textDecoration "none" :fontStyle "normal"}}
-            "CD33"]])]))
+            "CD33"]])
+        (when empty-search?
+          [:div {:style {:marginTop "1em" :fontStyle "italic" :fontSize "small"}}
+           "Gene not found!"])]))
    :component-did-mount
    (fn [{:keys [props state locals]}]
      (u/ajax {:url (str (:api-url-root props) "/exec-sql")
@@ -127,7 +137,6 @@
                                 (map
                                  clojure.string/lower-case
                                  (map #(get % "gene") (get (get-parsed-response) "rows")))))}))})
-
 
 (react/defc Component
   {:render

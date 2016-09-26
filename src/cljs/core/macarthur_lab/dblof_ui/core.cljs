@@ -128,19 +128,18 @@
         [:div {:style {:height 30}}]
         [pd/Component (merge {:api-url-root api-url-root}
                              (select-keys props [:gene-name])
-                             (select-keys @state [:variants])
-                             (select-keys @state [:variants-v2]))]
+                             (select-keys @state [:variants]))]
         [:div {:style {:height 30}}]
         (when (get @state :show-canvas?) ; if :show-canvas? is true, show pd2 div
           [:div {}
            [pd2/Component (merge {:api-url-root api-url-root}
                                  (select-keys props [:gene-name])
-                                 (select-keys @state [:variants-v2]))]
+                                 (select-keys @state [:variants]))]
            [:div {:style {:height 30}}]])
         (when (get @state :show-three?) ;if :show-three? is true, show three-experiment div
           [:div {} [three-experiment/Component (merge {:api-url-root api-url-root}
                                                        (select-keys props [:gene-name])
-                                                       (select-keys @state [:variants-v2]))]
+                                                       (select-keys @state [:variants]))]
            [:div {:style {:height 30}}]])
         [:div {:style {:display "flex" :justifyContent "space-between"}}
          (plot "Age distribution" "group-plot")
@@ -166,7 +165,7 @@
          (if show-variants?
            [variant-table/Component (merge {:api-url-root api-url-root}
                                            (select-keys props [:gene-name])
-                                           (select-keys @state [:variants :variants-v2]))]
+                                           (select-keys @state [:variants]))]
            [literature/Component
             (merge {:api-url-root api-url-root
                     :on-loaded (fn [has-literature?]
@@ -256,25 +255,33 @@
        (u/ajax {:url exec-sql-url
                 :method :post
                 :data (u/->json-string
-                       {:sql (str
-                              "select * from variants v\n"
-                              "inner join gene_symbols gs on v.gene_id = gs.gene_id\n"
-                              "where gs.symbol = ? and Annotation in "
-                              "('splice acceptor', 'stop gained', 'splice donor', 'frameshift')")
-                        :params [gene-name-uc]})
+                        {:sql (str
+                              "select v.gene_id, v.chrom as Chrom, v.position, v.reference as Reference, v.alternate as Alternate,\n "
+                              "v.Consequence,v.Filter, v.annotation as Annotation, v.flags as Flags, v.`allele count` as allele_count,\n"
+                              "v.`allele number` as allele_number, v.`number of homozygotes` as num_hom,\n"
+                              " v.`allele frequency` as `Allele Frequency`,   m.`description`,\n"
+                              " m.annotation as `Manual Annotation`, m.`author`, m.date, gs.symbol\n"
+                              "from variants as v inner join gene_symbols gs on v.gene_id=gs.gene_id\n"
+                              "and v.annotation in ('splice acceptor', 'stop gained', 'splice donor', 'frameshift')\n"
+                              "left join mannually_curated_variants as m on v.chrom=m.chrom and  v.reference=m.ref\n"
+                              "and v.alternate=m.alt and v.position=m.pos where gs.symbol= ? ")
+                         :params [gene-name-uc]}
+                       )
                 :on-done (fn [{:keys [get-parsed-response]}]
                            (swap! state assoc
-                                  :variants-v2
+                                  :variants
                                   (map (fn [v]
                                          (assoc v
                                                 "Variant"
-                                                (str (v "Chrom") ":" (v "Position")
+                                                (str (v "Chrom") ":" (v "position")
                                                      " " (v "Reference") " / " (v "Alternate"))
-                                                "Allele Count" (js/parseInt (v "Allele Count"))
-                                                "Position" (js/parseInt (v "Position"))
+                                                "Allele Count" (js/parseInt (v "allele_count"))
+                                                "Position" (js/parseInt (v "position"))
+                                                "Allele Number" (js/parseInt (v "allele_number"))
                                                 "Number of Homozygotes"
-                                                (js/parseInt (v "Number of Homozygotes"))))
+                                                (js/parseInt (v "num_hom"))))
                                        (get (get-parsed-response) "rows"))))})))})
+
 ;;component for search box
 (react/defc App
   {:get-initial-state
@@ -330,7 +337,6 @@
    :component-will-unmount
    (fn [{:keys [locals]}]
      (.removeEventListener js/window "hashchange" (get @locals :hash-change-listener)))})
-
 
 (defn render-application []
   (react/render
