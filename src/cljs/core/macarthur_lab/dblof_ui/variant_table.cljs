@@ -5,7 +5,28 @@
    [macarthur-lab.dblof-ui.utils :as u]
    ))
 
-(def columns [{:label "Variant" :width "15%"
+
+(react/defc FlagComponent
+  {:render
+   (fn [{:keys [props state]}]
+     (let  [{:keys [flag-text-new]} props]
+       [:span {:style {:backgroundColor "#e62e00" :color "#f2f2f2"
+                       :fontWeight "normal" :padding "2px 4px"
+                       :borderRadius "5px"
+                       :position "relative"
+                       :display "inline-block"
+                       :borderBottom "1px dotted black"}
+               ;; TODO(dmohs): This implementation is not ready.
+               :onMouseEnterDISABLED #(swap! state assoc :hovering? true)
+               :onMouseLeaveDISABLED #(swap! state dissoc :hovering?)}
+        (if (:hovering? @state)
+          [:span {:style {:position "absolute" :top "1.5em" :backgroundColor "black"
+                          :visibility "visible"
+                          :padding "2px 2px" :display "block" :borderRadius "4px"  :zIndex "1000"}}
+           "Manual curation of read and annotation data suggests variant is not LoF"])
+        (:flag-text props)]))})
+
+(def columns [{:label "Variant" :width "13%"
                :format (fn [variant]
                          [:a {:href (u/get-exac-variant-page-href
                                      (get variant "Chrom") (get variant "Position")
@@ -13,28 +34,30 @@
                               :target "_blank"
                               :style {:textDecoration "none"}}
                           (str (get variant "Chrom") ":" (get variant "Position")
-                           " " (get variant "Reference") " / " (get variant "Alternate"))])}
+                               " " (get variant "Reference") " / " (get variant "Alternate"))])}
               {:key "Chrom" :label "Chrom" :width "6%"}
-              {:key "Position" :label "Position" :width "10%"}
+              {:key "Position" :label "Position" :width "8%"}
               {:key "Consequence" :label "Consequence" :width "12%"}
               {:key "Annotation" :label "Annotation" :width "10%"}
               {:label "Flags" :width "7%"
                :format (fn [variant]
-                         [:span { :style {:backgroundColor "#e62e00" :color "#f2f2f2"
-                                          :fontWeight "normal" :paddingTop "2px"
-                                          :paddingBottom "2px" :borderRadius "4px"}}
-                          (cond
-                           (identical? (get variant "Manual Annotation") "no") "Manual"
-                           (not (clojure.string/blank? (get variant "Flags"))) "LOFTEE"
-                           (not (identical? (get variant "Manual Annotation") "no")) ""
-                           (clojure.string/blank? (get variant "Flags")) ""
-                           )])}
+                         (let [flag-text
+                               (cond
+                                 (= (get variant "Manual Annotation") "no") "Manual"
+                                 (not (clojure.string/blank? (get variant "Flags"))) "LOFTEE"
+                                 :else nil)
+                               flag-tick
+                               (cond (= (get variant "Manual Annotation") "yes") "✓")]
+                           (cond
+                             flag-text
+                             [FlagComponent {:flag-text flag-text}]
+                             flag-tick
+                             [:span {:style {:color "green"}} flag-tick])))}
               {:key "Allele Count" :label "Allele Count" :width "6%"}
               {:key "Allele Number" :label "Allele Number" :width "8%"}
-              {:key "Number of Homozygotes" :label "Number of Homozygotes" :width "11%"}
+              {:key "Number of Homozygotes" :label "Number of Homozygotes" :width "10%"}
               {:key "Allele Frequency" :label "Allele Frequency" :width "10%"}
-              {:key "Manual Annotation" :label "Manual Annotation" :width "10%"}
-            ])
+              {:key "Manual Annotation" :label "Manual Annotation" :width "10%"}])
 
 (defn create-variants-query [gene-id]
   {:genes {:$in [gene-id]}
@@ -62,7 +85,7 @@
         [:div {:style {:display "flex" :alignItems "center" :fontWeight "bold"}}
          (map (fn [col]
                 [:div {:style {:flex (str "0 0 " (:width col)) :padding 10 :boxSizing "border-box"
-                               :cursor "pointer" :position "relative" :overflow "hidden"}
+                               :cursor "pointer" :position "relative" :overflowX "hidden"}
                        :onClick #(swap! state assoc
                                         :sort-column-key (or (:key col) "Allele Count")
                                         :sort-reversed? (if (= (or (:key col) "Allele Count")
@@ -87,7 +110,7 @@
                     (map (fn [col]
                            [:div {:style {:flex (str "0 0 " (:width col))
                                           :padding "6px 10px" :boxSizing "border-box"
-                                          :overflow "hidden" :textOverflow "ellipsis"}}
+                                          :overflowX "hidden" :textOverflow "ellipsis"}}
                             (let [value (if (contains? col :key) (get x (:key col)) x)
                                   format (or (:format col) identity)]
                               (format value))])

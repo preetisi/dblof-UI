@@ -2,6 +2,7 @@
   (:require
    clojure.string
    [dmohs.react :as react]
+   [macarthur-lab.dblof-ui.about-page :as about-page]
    [macarthur-lab.dblof-ui.literature :as literature]
    [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.pd2 :as pd2]
@@ -13,11 +14,11 @@
    [macarthur-lab.dblof-ui.variant-table :as variant-table]
    ))
 
-(def api-url-root "http://api.staging.dblof.broadinstitute.org")
+(def api-url-root "http://api.dblof.broadinstitute.org")
 
 (defonce genes-atom (atom nil))
 
-;;if this ajax call fails -> Show error message to user
+;; TODO: if this ajax call fails -> Show error message to user
 (when-not @genes-atom
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
@@ -282,49 +283,19 @@
                                                 (js/parseInt (v "num_hom"))))
                                        (get (get-parsed-response) "rows"))))})))})
 
-;;component for search box
-(react/defc App
+(react/defc SearchBoxAndResults
   {:get-initial-state
    (fn [] {:hash (get-window-hash)})
    :render
    (fn [{:keys [this state refs]}]
-     (let [{:keys [hash exac-age-info age-bins logged-in?]} @state]
-       (if logged-in?
-         [:div {}
-          [search-area/Component {:api-url-root api-url-root :compact? hash}]
-          (when hash
-            [GeneInfo {:hash hash :gene-name (get-gene-name-from-window-hash hash)}])]
-         (let [{:keys [values]} @state
-               {:keys [username password]} values]
-           [:div {:style {:backgroundColor "#343A41" :color "white"
-                          :padding 20}}
-            [search-area/Logo]
-            [:div {:style {:marginTop "15vh" :display "flex" :justifyContent "center"}}
-             [:div {:style {:textTransform "uppercase" :fontSize "xx-large" :fontWeight 900}}
-              "Log-In"]]
-            [:div {:style {:marginTop 12 :display "flex" :justifyContent "center"}}
-             [:input {:placeholder "Username"
-                      :value (or username "")
-                      :onChange #(swap! state assoc-in [:values :username] (-> % .-target .-value))
-                      :style {:width "20ex" :height "1.5em"
-                              :fontSize "large" :verticalAlign "top"}}]]
-            [:div {:style {:marginTop 12 :display "flex" :justifyContent "center"}}
-             [:input {:type "password"
-                      :placeholder "Password"
-                      :value (or password "")
-                      :onChange #(swap! state assoc-in [:values :password] (-> % .-target .-value))
-                      :style {:width "20ex" :height "1.5em"
-                              :fontSize "large" :verticalAlign "top"}}]]
-            [:div {:style {:marginTop 12 :display "flex" :justifyContent "center"}}
-             [:button {:onClick (fn [e]
-                                  (when (and (= username "dblofpreview") (= password "qY9CW7MDdY"))
-                                    (swap! state assoc :logged-in? true)))
-                       :style {:width "10ex" :height "1.5em"
-                               :fontSize "large" :verticalAlign "top"}}
-              "Log-In"]]
-            [:div {:style {:clear "both"
-                           :margin "10vh -20px -20px -20px"
-                           :height 4 :backgroundColor "#24AFB2"}}]]))))
+     (let [{:keys [hash exac-age-info age-bins]} @state]
+       [:div {}
+        [search-area/Component {:api-url-root api-url-root :compact? hash}]
+        ; if gene-info returns true then dont show the about page
+        (if-not hash
+          [about-page/Component]
+          [GeneInfo {:hash hash :gene-name (get-gene-name-from-window-hash hash)}])]))
+
    :component-did-mount
    (fn [{:keys [state locals]}]
      (let [hash-change-listener (fn [e]
@@ -341,6 +312,6 @@
 (defn render-application []
   (react/render
     (react/create-element
-      App
+      SearchBoxAndResults
       {})
     (.. js/document (getElementById "app"))))

@@ -74,9 +74,11 @@
            segments (when (and data variants)
                       (create-segments (sort-by #(get % "start") data)
                                        (sort-by #(get % "Position") variants)))
-           reversed? (when (< (get (nth (sort-by #(get % "start") data) 1) "exon_number")
-                              (get (last (sort-by #(get % "start") data)) "exon_number"))
-                       true)]
+           reversed? (when data
+                       (let [sorted (sort-by #(get % "start") data)]
+                         (when (< (get (nth sorted 1) "exon_number")
+                                  (get (last sorted) "exon_number"))
+                           true)))]
        [:div {:style {:backgroundColor "white" :padding "20px 16px 20px 32px"}}
         (style/create-underlined-title "Positional distribution")
         [:div {:style {:height 150 :position :relative
