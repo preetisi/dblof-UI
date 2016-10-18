@@ -1,5 +1,0 @@
-The Exome Aggregation Consortium (ExAC) is a coalition of investigators seeking to aggregate and harmonize exome sequencing data from a wide variety of large-scale sequencing projects, and to make summary data available for the wider scientific community.
-
-The data set provided on this website spans 60,706 unrelated individuals sequenced as part of various disease-specific and population genetic studies. The ExAC Principal Investigators and groups that have contributed data to the current release are listed here.
-
-All data here are released under a Fort Lauderdale Agreement for the benefit of the wider biomedical community - see the terms of use here.
