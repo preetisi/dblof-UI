@@ -3,6 +3,7 @@
    clojure.string
    [dmohs.react :as react]
    [macarthur-lab.dblof-ui.about-page :as about-page]
+   [macarthur-lab.dblof-ui.floating :as floating]
    [macarthur-lab.dblof-ui.literature :as literature]
    [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.pd2 :as pd2]
@@ -294,17 +295,18 @@
         ; if gene-info returns true then dont show the about page
         (if-not hash
           [about-page/Component]
-          [GeneInfo {:hash hash :gene-name (get-gene-name-from-window-hash hash)}])]))
-
+          [GeneInfo {:hash hash :gene-name (get-gene-name-from-window-hash hash)}])
+        [floating/Component {:ref "floats"}]]))
    :component-did-mount
-   (fn [{:keys [state locals]}]
+   (fn [{:keys [state refs locals]}]
      (let [hash-change-listener (fn [e]
                                   (let [hash (get-window-hash)]
                                     (if hash
                                       (swap! state assoc :hash hash)
                                       (swap! state dissoc :hash))))]
        (swap! locals assoc :hash-change-listener hash-change-listener)
-       (.addEventListener js/window "hashchange" hash-change-listener)))
+       (.addEventListener js/window "hashchange" hash-change-listener))
+     (floating/set-instance! (@refs "floats")))
    :component-will-unmount
    (fn [{:keys [locals]}]
      (.removeEventListener js/window "hashchange" (get @locals :hash-change-listener)))})

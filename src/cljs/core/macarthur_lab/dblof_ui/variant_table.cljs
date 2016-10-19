@@ -2,29 +2,41 @@
   (:require
    clojure.string
    [dmohs.react :as react]
+   [macarthur-lab.dblof-ui.floating :as floating]
    [macarthur-lab.dblof-ui.utils :as u]
    ))
 
 
+(defn- create-float [left top text]
+  (react/create-element
+   [:div {:style {:position "fixed" :left left :top top}}
+    [:div {:style {:backgroundColor "#555" :borderRadius 2
+                   :padding "2px 4px" :color "#eee" :fontWeight 100}}
+     text]]))
+
+
+(defn- flag-box [text]
+  [:span {:style {:backgroundColor "#e62e00" :color "#f2f2f2"
+                  :fontWeight "normal" :padding "2px 4px"
+                  :borderRadius "5px"
+                  :position "relative"
+                  :display "inline-block"
+                  :borderBottom "1px dotted black"}}
+   text])
+
+
 (react/defc FlagComponent
   {:render
-   (fn [{:keys [props state]}]
-     (let  [{:keys [flag-text-new]} props]
-       [:span {:style {:backgroundColor "#e62e00" :color "#f2f2f2"
-                       :fontWeight "normal" :padding "2px 4px"
-                       :borderRadius "5px"
-                       :position "relative"
-                       :display "inline-block"
-                       :borderBottom "1px dotted black"}
-               ;; TODO(dmohs): This implementation is not ready.
-               :onMouseEnterDISABLED #(swap! state assoc :hovering? true)
-               :onMouseLeaveDISABLED #(swap! state dissoc :hovering?)}
-        (if (:hovering? @state)
-          [:span {:style {:position "absolute" :top "1.5em" :backgroundColor "black"
-                          :visibility "visible"
-                          :padding "2px 2px" :display "block" :borderRadius "4px"  :zIndex "1000"}}
-           "Manual curation of read and annotation data suggests variant is not LoF"])
-        (:flag-text props)]))})
+   (fn [{:keys [props state refs locals]}]
+     [:span {:ref "root"
+             :onMouseOver (fn []
+                             (let [rect (.getBoundingClientRect (@refs "root"))
+                                   float (create-float (+ (.-right rect) 4) (.-top rect)
+                                                       (:popup-text props))]
+                               (swap! locals assoc :float float)
+                               (floating/add-float float)))
+             :onMouseOut #(floating/remove-float (:float @locals))}
+      (:child props)])})
 
 (def columns [{:label "Variant" :width "13%"
                :format (fn [variant]
@@ -41,18 +53,19 @@
               {:key "Annotation" :label "Annotation" :width "10%"}
               {:label "Flags" :width "7%"
                :format (fn [variant]
-                         (let [flag-text
+                         (let [[child popup-text]
                                (cond
-                                 (= (get variant "Manual Annotation") "no") "Manual"
-                                 (not (clojure.string/blank? (get variant "Flags"))) "LOFTEE"
-                                 :else nil)
-                               flag-tick
-                               (cond (= (get variant "Manual Annotation") "yes") "✓")]
-                           (cond
-                             flag-text
-                             [FlagComponent {:flag-text flag-text}]
-                             flag-tick
-                             [:span {:style {:color "green"}} flag-tick])))}
+                                 (= (get variant "Manual Annotation") "no")
+                                 [(flag-box "Manual")
+                                  [:span {}
+                                   "Manual curation of read and annotation data" [:br]
+                                   "suggests variant is not LoF."]]
+                                 (not (clojure.string/blank? (get variant "Flags")))
+                                 [(flag-box "LOFTEE") "Filtered by LOFTEE pipeline"]
+                                 (= (get variant "Manual Annotation") "yes")
+                                 [[:span {:style {:color "green"}} "✓"] "Curated LoF"]
+                                 :else nil)]
+                           (when child [FlagComponent {:child child :popup-text popup-text}])))}
               {:key "Allele Count" :label "Allele Count" :width "6%"}
               {:key "Allele Number" :label "Allele Number" :width "8%"}
               {:key "Number of Homozygotes" :label "Number of Homozygotes" :width "10%"}
