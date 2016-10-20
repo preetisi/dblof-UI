@@ -5,8 +5,8 @@
    [macarthur-lab.dblof-ui.about-page :as about-page]
    [macarthur-lab.dblof-ui.floating :as floating]
    [macarthur-lab.dblof-ui.literature :as literature]
-   [macarthur-lab.dblof-ui.pd :as pd]
    [macarthur-lab.dblof-ui.pd2 :as pd2]
+   [macarthur-lab.dblof-ui.pdconstitutive :as pdconstitutive]
    [macarthur-lab.dblof-ui.three-experiment :as three-experiment]
    [macarthur-lab.dblof-ui.search-area :as search-area]
    [macarthur-lab.dblof-ui.stats-box :as stats-box]
@@ -90,11 +90,13 @@
                                 })
                         :on-done
                         (fn [{:keys [get-parsed-response]}]
-                          (let [age_bins_each_gene (map (fn [s] (js/parseInt s))
-                                                        (keys (nth (get (get-parsed-response) "rows") 0)))
-                                age_frequencies_each_gene (vals (nth (get (get-parsed-response) "rows") 0))]
-                            (cb exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene age_bins_each_gene gene-name))
-                          )})))}))
+                          (let [age_bins_each_gene
+                                (map (fn [s] (js/parseInt s))
+                                     (keys (nth (get (get-parsed-response) "rows") 0)))
+                                age_frequencies_each_gene
+                                (vals (nth (get (get-parsed-response) "rows") 0))]
+                            (cb exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene
+                                age_bins_each_gene gene-name)))})))}))
 
 (defn- plot [title ref-name]
   [:div { :style {:flex "1 1 50%" :backgroundColor "white" :padding "20px 16px 0 16px"}}
@@ -128,7 +130,7 @@
           [stats-box/Component (merge {:api-url-root api-url-root}
                                       (select-keys props [:gene-name]))]]]
         [:div {:style {:height 30}}]
-        [pd/Component (merge {:api-url-root api-url-root}
+        [pdconstitutive/Component (merge {:api-url-root api-url-root}
                              (select-keys props [:gene-name])
                              (select-keys @state [:variants]))]
         [:div {:style {:height 30}}]
@@ -251,8 +253,7 @@
         (react/call :build-group-ages-plot this x1 y1 x2 y2 gene-name))))
    :load-variants-data
    (fn [{:keys [props state]} gene-name]
-     (let [exec-mongo-url (str api-url-root "/exec-mongo")
-           exec-sql-url (str api-url-root "/exec-sql")
+     (let [exec-sql-url (str api-url-root "/exec-sql")
            gene-name-uc (clojure.string/upper-case gene-name)]
        (u/ajax {:url exec-sql-url
                 :method :post
