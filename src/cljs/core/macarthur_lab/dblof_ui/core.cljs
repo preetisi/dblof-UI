@@ -259,16 +259,26 @@
                 :method :post
                 :data (u/->json-string
                         {:sql (str
-                              "select v.gene_id, v.chrom as Chrom, v.position, v.reference as Reference, v.alternate as Alternate,\n "
-                              "v.Consequence,v.Filter, v.annotation as Annotation, v.flags as Flags, v.`allele count` as allele_count,\n"
-                              "v.`allele number` as allele_number, v.`number of homozygotes` as num_hom,\n"
-                              " v.`allele frequency` as `Allele Frequency`,   m.`description`,\n"
-                              " m.annotation as `Manual Annotation`, m.`author`, m.date, gs.symbol\n"
-                              "from variants as v inner join gene_symbols gs on v.gene_id=gs.gene_id\n"
-                              "and v.annotation in ('splice acceptor', 'stop gained', 'splice donor', 'frameshift')\n"
-                              "left join mannually_curated_variants as m on v.chrom=m.chrom and  v.reference=m.ref\n"
-                              "and v.alternate=m.alt and v.position=m.pos where gs.symbol= ? ")
-                         :params [gene-name-uc]}
+                          "select vv.gene_id, vv.chrom as Chrom, vv.position,\n"
+                           "vv.reference as Reference, vv.alternate as Alternate,vv.Consequence,vv.Filter,\n"
+                           "vv.annotation as Annotation, vv.flags as Flags, vv.`allele_count` as allele_count,\n"
+                           "vv.`allele_number` as allele_number, vv.`num_hom` as num_hom,vv.`allele_freq` as `Allele Frequency`,\n"
+                           "vv.in_vanheel, vv.in_exac, m.`description`,m.annotation as `Manual Annotation`, m.`author`,\n"
+                           "m.date,gs.symbol from vanheel_variants_new as vv \n"
+                           "inner join gene_symbols gs on vv.gene_id=gs.gene_id and vv.annotation in \n"
+                           "('splice_acceptor_variant', 'stop_gained', 'splice_donor_variant', 'frameshift_variant') \n"
+                           "left join  mannually_curated_variants as m on vv.chrom=m.chrom and  vv.reference=m.ref \n"
+                           "and vv.alternate=m.alt and vv.position=m.pos where gs.symbol= ? \n"
+                           "union select v.gene_id, v.chrom as Chrom, v.position, v.reference as Reference, \n"
+                           "v.alternate as Alternate,v.Consequence,v.Filter, v.annotation as Annotation, \n"
+                           "v.flags as Flags, v.`allele count` as allele_count,v.`allele number` as allele_number, \n"
+                           "v.`number of homozygotes` as num_hom,v.`allele frequency` as `Allele Frequency` , \n"
+                           "v.in_vanheel as `in_vanheel`, v.in_exac as `in_exac`, m.`description`,m.annotation as `Manual Annotation`, \n"
+                           "m.`author`, m.date, gs.symbol from variants_backup_2016_09_07 as v inner join gene_symbols gs \n"
+                           "on v.gene_id=gs.gene_id and v.annotation in ('splice acceptor', 'stop gained', 'splice donor', 'frameshift') \n"
+                           "left join mannually_curated_variants as m on v.chrom=m.chrom and  v.reference=m.ref and v.alternate=m.alt \n"
+                           "and v.position=m.pos where gs.symbol= ?")
+                         :params [gene-name-uc gene-name-uc]}
                        )
                 :on-done (fn [{:keys [get-parsed-response]}]
                            (swap! state assoc

@@ -60,10 +60,16 @@
                                   [:span {}
                                    "Manual curation of read and annotation data" [:br]
                                    "suggests variant is not LoF."]]
+                                   (identical? (get variant "in_vanheel") 1)
+                                   [(flag-box "Bib")
+                                    [:span {}
+                                     "data from the Born in Bradford cohort," [:br]
+                                     "published in Narasimhan et al. Science 2016."]]
                                  (not (clojure.string/blank? (get variant "Flags")))
                                  [(flag-box "LOFTEE") "Filtered by LOFTEE pipeline"]
                                  (= (get variant "Manual Annotation") "yes")
                                  [[:span {:style {:color "green"}} "✓"] "Curated LoF"]
+
                                  :else nil)]
                            (when child [FlagComponent {:child child :popup-text popup-text}])))}
               {:key "Allele Count" :label "Allele Count" :width "6%"}
