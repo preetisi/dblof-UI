@@ -25,9 +25,12 @@
          [:div {:style {:marginTop 10 :marginBottom 5 :height 1 :backgroundColor "#444242"}}]
          [:div {:style {:fontWeight "bold" :fontSize 10 :color "#444242" :textAlign "left"}}
           "Daniel MacArthur" [:br]
-           "Narasimhan et al (Science 2016):
+           "**Narasimhan et al (Science 2016):
             Born In Bradford: John Wright Birmingham: Eamonn Maher" [:br]
-            "David van Heel, Richard Trembath, Daniel MacArthur, Richard Durbin"]]
+            "**David van Heel, Richard Trembath, Daniel MacArthur, Richard Durbin"]
+            [:a {:href "http://science.sciencemag.org/content/352/6284/474.full"
+                 :style {:fontSize 10 :color "#444242"}}
+             "**Narasimhan et al (Science 2016)"]]
          [:div {:style {:paddingTop 10 :fontWeight "bold" :fontSize "1.5em" :color "#444242" :textAlign "left"}}
           "Software Team"
           [:div {:style {:marginTop 10 :marginBottom 5 :height 1 :backgroundColor "#444242"}}]
