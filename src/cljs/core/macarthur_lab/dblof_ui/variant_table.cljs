@@ -47,10 +47,10 @@
                               :style {:textDecoration "none"}}
                           (str (get variant "Chrom") ":" (get variant "Position")
                                " " (get variant "Reference") " / " (get variant "Alternate"))])}
-              {:key "Chrom" :label "Chrom" :width "6%"}
-              {:key "Position" :label "Position" :width "8%"}
+              {:key "Chrom" :label "Chrom" :width "7%"}
+              {:key "Position" :label "Position" :width "9%"}
               {:key "Consequence" :label "Consequence" :width "12%"}
-              {:key "Annotation" :label "Annotation" :width "10%"}
+              {:key "Annotation" :label "Annotation" :width "12%"}
               {:label "Flags" :width "7%"
                :format (fn [variant]
                          (let [[child popup-text]
@@ -72,11 +72,10 @@
 
                                  :else nil)]
                            (when child [FlagComponent {:child child :popup-text popup-text}])))}
-              {:key "Allele Count" :label "Allele Count" :width "6%"}
-              {:key "Allele Number" :label "Allele Number" :width "8%"}
+              {:key "Allele Count" :label "Allele Count" :width "10%"}
+              {:key "Allele Number" :label "Allele Number" :width "10%"}
               {:key "Number of Homozygotes" :label "Number of Homozygotes" :width "10%"}
-              {:key "Allele Frequency" :label "Allele Frequency" :width "10%"}
-              {:key "Manual Annotation" :label "Manual Annotation" :width "10%"}])
+              {:key "Allele Frequency" :label "Allele Frequency" :width "10%"}])
 
 (defn create-variants-query [gene-id]
   {:genes {:$in [gene-id]}
