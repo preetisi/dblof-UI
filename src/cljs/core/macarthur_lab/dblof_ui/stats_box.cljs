@@ -43,18 +43,20 @@
               :method :post
               :data (u/->json-string
                      {:sql (str
-                            "select"
-                            " (select (n_lof / exp_lof) * 100 from constraint_scores"
-                            " where gene = ?) as `lof-ratio`,"
-                            " (select cast(pli as decimal(10,2)) from constraint_scores where gene = ?) as `pli`,"
-                            " (select sum(`Number of Homozygotes`) from variants v"
-                            " inner join gene_symbols gs on v.gene_id = gs.gene_id"
-                            " where gs.symbol = ? and Annotation in ('splice acceptor', 'stop gained',"
-                            " 'splice donor', 'frameshift')) as `homozygotes-count`,"
-                            " (select sum(`Allele Frequency`) from variants v inner join gene_symbols"
-                            " gs on v.gene_id = gs.gene_id where gs.symbol = ? and "
-                            " Annotation in ('splice acceptor', 'stop gained', 'splice donor', 'frameshift')) as `cumulative-af`;")
-                      :params (repeat 4 gene-name)})
+                            "select\n"
+                            "(select (n_lof / exp_lof) * 100 from constraint_scores\n"
+                            "where gene = ?) as `lof-ratio`,\n"
+                            "(select cast(pli as decimal(10,2)) from constraint_scores where gene = ?) as `pli`,\n"
+                            "(select sum(`num_hom`) from (select sum(`Number of Homozygotes`) as `num_hom`\n"
+                            "from variants v inner join gene_symbols gs on v.gene_id = gs.gene_id\n"
+                            "where gs.symbol = ? and Annotation in ('splice acceptor', 'stop gained','splice donor', 'frameshift')\n"
+                            "union select sum(`num_hom`) from vanheel_variants_new vv inner join gene_symbols gs on vv.gene_id = gs.gene_id\n"
+                            "where gs.symbol = ? and Annotation in ('splice_acceptor_variant', 'stop_gained', 'splice_donor_variant', 'frameshift_variant')) G)\n"
+                            "as `homozygotes-count`,\n"
+                            "(select sum(`Allele Frequency`) from variants v inner join gene_symbols\n"
+                            "gs on v.gene_id = gs.gene_id where gs.symbol = ? and \n"
+                            "Annotation in ('splice acceptor', 'stop gained', 'splice donor', 'frameshift')) as `cumulative-af`;")
+                      :params (repeat 5 gene-name)})
               :on-done (fn [{:keys [get-parsed-response]}]
                          (let [gene-info (first (get (get-parsed-response) "rows"))]
                            (swap! state assoc :status {:code :loaded :data gene-info})))}))})
