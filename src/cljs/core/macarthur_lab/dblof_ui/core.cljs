@@ -62,6 +62,14 @@
                             population_category (vals (merge default-map1 (nth (get (get-parsed-response) "rows") 0)))]
                         (cb population_frequencies population_category)))}))
 
+(defn change-label[xs]
+  (map (fn [x]
+         (case x 15 "<20" (str x)
+               x 85 ">80" (str x))) xs))
+
+(defn put-labels[xs]
+  (map (fn [x] (case x "<20" 15 ">80" 85 (int x))) xs))
+
 (defn- calculate-exac-group-age [gene-name cb]
   (u/ajax {:url (str api-url-root "/exec-sql")
            :method :post
@@ -85,9 +93,8 @@
                                        nadh.bin_55 as `55`, nadh.bin_60 as `60`, nadh.bin_65 as `65`,
                                        nadh.bin_70 as `70`, nadh.bin_75 as `75`, nadh.bin_80 as `80`,
                                        nadh.bin_85 as `85` from normalised_age_new_histogram nadh
-                                       inner join gene_symbols gs on nadh.gene = gs.gene_id where gs.symbol = ?;")
-                                :params (clojure.string/upper-case gene-name)
-                                })
+                                       inner join gene_symbols gs on nadh.gene = gs.gene_id where gs.symbol = ?")
+                                :params (clojure.string/upper-case gene-name)})
                         :on-done
                         (fn [{:keys [get-parsed-response]}]
                           (let [age_bins_each_gene
@@ -95,8 +102,8 @@
                                      (keys (nth (get (get-parsed-response) "rows") 0)))
                                 age_frequencies_each_gene
                                 (vals (nth (get (get-parsed-response) "rows") 0))]
-                            (cb exac-age-frequency-g1 exac-bins-g1 age_frequencies_each_gene
-                                age_bins_each_gene gene-name)))})))}))
+                            (cb exac-age-frequency-g1 (change-label exac-bins-g1) age_frequencies_each_gene
+                                (change-label age_bins_each_gene) gene-name)))})))}))
 
 (defn- plot [title ref-name]
   [:div { :style {:flex "1 1 50%" :backgroundColor "white" :padding "20px 16px 0 16px"}}
@@ -209,8 +216,7 @@
                        :orientation "h"
                        :marker {:color ["FF9912" "#6AA5CD"
                                         "#ED1E24" "#002F6C"
-                                        "#108C44" "#941494"
-                                        ]}}])
+                                        "#108C44" "#941494"]}}])
             (clj->js {:xaxis {:autorange true
                               :showgrid false
                               :showticklabels false
@@ -221,23 +227,27 @@
            (clj->js {:displayModeBar false})))
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
+     (u/cljslog "x1" y1 x1 x2 y2)
      (.newPlot js/Plotly (@refs "group-plot")
                (clj->js [{:type "bar"
                           :name "All ExAC individuals"
-                          :x y1
+                          :x (put-labels y1)
                           :y x1
                           :marker {:color "47cccc"}}
                          {:type "bar"
                           :name  (str "LoF carriers in " (clojure.string/upper-case gene-name) )
-                          :x y2
+                          :x (put-labels y2)
                           :y x2
                           :displayModeBar false}])
-               (clj->js {:xaxis {:autorange true
-                                 :showgrid false
-                                 :title "Age" :titlefont {:size 14}}
-                         :yaxis {:autorange true
-                                 :showgrid false
-                                 :title "Frequency" :showticklabels false :titlefont {:size 14}}
+               (clj->js {:xaxis {:showgrid false
+                                 :title "Age"
+                                 :titlefont {:size 14}
+                                 :ticktext y1
+                                 :tickvals (put-labels y1)}
+                         :yaxis {:showgrid false
+                                 :title "Frequency"
+                                 :showticklabels false
+                                 :titlefont {:size 14}}
                          :legend {:x 0 :y 1.35 :bgcolor "rgba(255, 255, 255, 0)"}
                          :displayModeBar false})
                (clj->js {:displayModeBar false})))
