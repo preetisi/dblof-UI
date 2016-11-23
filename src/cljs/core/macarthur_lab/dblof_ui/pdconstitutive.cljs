@@ -97,7 +97,6 @@
            ;; check if first element of the sorted list is + or -
            reversed? (when (= (get (first sorted-data) "strand") "+")
                        true)]
-       (u/cljslog "reversed?" reversed?)
        [:div {:style {:backgroundColor "white" :padding "20px 16px 20px 32px"}}
         (style/create-underlined-title "Positional distribution")
         [:div {:style {:height 150 :position :relative
