@@ -227,7 +227,6 @@
            (clj->js {:displayModeBar false})))
    :build-group-ages-plot
    (fn [{:keys [this refs state props]} x1 y1 x2 y2 gene-name]
-     (u/cljslog "x1" y1 x1 x2 y2)
      (.newPlot js/Plotly (@refs "group-plot")
                (clj->js [{:type "bar"
                           :name "All ExAC individuals"
