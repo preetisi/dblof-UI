@@ -30,7 +30,6 @@
                          :backgroundColor "rgba(36,175,178,0.5)"}}]]))
        variants))]))
 
-
 (defn c-and-nc->exon-groups [c-a-nc]
   (reduce
    (fn [r x]
@@ -91,15 +90,23 @@
                             :ref (get v "Reference")
                             :alt (get v "Alternate")})
                          variants)
+           sorted-data (sort-by #(get % "start") data)
+           sorted-variants (sort-by #(get % "position") variants)
            segments (when (and data variants)
-                      (create-segments (sort-by #(get % "start") data)
-                                       (sort-by #(get % "position") variants)))]
+                      (create-segments sorted-data sorted-variants))
+           ;; check if first element of the sorted list is + or -
+           reversed? (when (= (get (first sorted-data) "strand") "+")
+                       true)]
+       (u/cljslog "reversed?" reversed?)
        [:div {:style {:backgroundColor "white" :padding "20px 16px 20px 32px"}}
         (style/create-underlined-title "Positional distribution")
         [:div {:style {:height 150 :position :relative
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          [:div {:style {:height 1 :backgroundColor "#ccc"
                         :position "absolute" :width "100%" :bottom 30}}]
+         (if reversed?
+           (style/put-arrows "←")
+           (style/put-arrows "→"))
          [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
                         :display "flex"}}
           (map
