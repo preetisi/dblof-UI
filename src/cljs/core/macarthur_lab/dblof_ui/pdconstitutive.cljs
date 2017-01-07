@@ -103,9 +103,6 @@
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          [:div {:style {:height 1 :backgroundColor "#ccc"
                         :position "absolute" :width "100%" :bottom 30}}]
-         (if reversed?
-           (style/put-arrows "←")
-           (style/put-arrows "→"))
          [:div {:style {:position "absolute" :bottom 15 :height 30 :width "100%"
                         :display "flex"}}
           (map
