@@ -3,6 +3,7 @@
    clojure.string
    [dmohs.react :as react]
    [macarthur-lab.dblof-ui.floating :as floating]
+   [macarthur-lab.dblof-ui.style :as style]
    [macarthur-lab.dblof-ui.utils :as u]
    ))
 
@@ -13,17 +14,6 @@
     [:div {:style {:backgroundColor "#555" :borderRadius 2
                    :padding "2px 4px" :color "#eee" :fontWeight 100}}
      text]]))
-
-
-(defn- flag-box [text]
-  [:span {:style {:backgroundColor "#e62e00" :color "#f2f2f2"
-                  :fontWeight "normal" :padding "2px 4px"
-                  :borderRadius "5px"
-                  :position "relative"
-                  :display "inline-block"
-                  :borderBottom "1px dotted black"}}
-   text])
-
 
 (react/defc FlagComponent
   {:render
@@ -38,37 +28,53 @@
              :onMouseOut #(floating/remove-float (:float @locals))}
       (:child props)])})
 
-(def columns [{:label "Variant" :width "13%"
+(def columns [{:label "Variant" :width "10%"
                :format (fn [variant]
                          [:a {:href (u/get-exac-variant-page-href
                                      (get variant "Chrom") (get variant "Position")
                                      (get variant "Reference") (get variant "Alternate"))
                               :target "_blank"
                               :style {:textDecoration "none"}}
-                          (str (get variant "Chrom") ":" (get variant "Position")
+                               (str (get variant "Chrom") ":" (get variant "Position")
                                " " (get variant "Reference") " / " (get variant "Alternate"))])}
-              {:key "Chrom" :label "Chrom" :width "7%"}
-              {:key "Position" :label "Position" :width "9%"}
-              {:key "Consequence" :label "Consequence" :width "12%"}
-              {:key "Annotation" :label "Annotation" :width "12%"}
-              {:label "Flags" :width "7%"
+              {:key "Consequence" :label "Consequence" :width "10%"}
+              {:key "Annotation" :label "Annotation" :width "10%"}
+              {:label "LoF" :width "10%"
+               :format (fn [variant]
+                         (let [[child popup-text]
+                               (cond
+                                 (not (clojure.string/blank? (get variant "Flags")))
+                                 [(style/create-box "LOFTEE" "#e62e00") "Filtered by LOFTEE pipeline"])]
+                           (when child [FlagComponent {:child child :popup-text popup-text}])))}
+              {:label "Source" :width "10%"
+               :format (fn [variant]
+                         (let [[child popup-text]
+                               (cond
+                                 (identical? (get variant "in_vanheel") 1)
+                                 [(style/create-box "BiB" "green")
+                                  [:span {}
+                                   "data from the Born in Bradford cohort," [:br]
+                                   "published in Narasimhan et al. Science 2016."]]
+                                 (identical? (get variant "in_exac") 1)
+                                 [(style/create-box "ExAC" "green")
+                                  [:span {}
+                                   "Data from ExAC browser"]]
+                                 :else nil)]
+                            (when child [FlagComponent {:child child :popup-text popup-text}])))}
+              {:label "Flags" :width "10%"
                :format (fn [variant]
                          (let [[child popup-text]
                                (cond
                                  (= (get variant "Manual Annotation") "no")
-                                 [(flag-box "Manual")
+                                 [(style/create-box "Manual" "#e62e00")
                                   [:span {}
                                    "Manual curation of read and annotation data" [:br]
                                    "suggests variant is not LoF."]]
-                                   (identical? (get variant "in_vanheel") 1)
-                                   [(flag-box "Bib")
-                                    [:span {}
-                                     "data from the Born in Bradford cohort," [:br]
-                                     "published in Narasimhan et al. Science 2016."]]
-                                 (not (clojure.string/blank? (get variant "Flags")))
-                                 [(flag-box "LOFTEE") "Filtered by LOFTEE pipeline"]
+
                                  (= (get variant "Manual Annotation") "yes")
                                  [[:span {:style {:color "green"}} "✓"] "Curated LoF"]
+                                 (= (get variant "Manual Annotation") "no")
+                                 [[:span {:style {:color "red"}} "x"] "Curated LoF"]
 
                                  :else nil)]
                            (when child [FlagComponent {:child child :popup-text popup-text}])))}

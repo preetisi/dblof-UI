@@ -32,22 +32,22 @@
 
 (defn c-and-nc->exon-groups [c-a-nc]
   (reduce
-   (fn [r x]
-     (let [lv (last r)
-           le (last lv)
-           stop (get le "stop")]
-       (if (<= (get x "start") stop)
-         (conj (last r) (conj lv x))
-         (conj r [x]))))
+   (fn [first-element rest-of-vector]
+     (let [current-exon-vector (last first-element)
+           element (last current-exon-vector)
+           stop (get element "stop")]
+       (if (< (get rest-of-vector "start") stop)
+         (conj (last first-element) (conj current-exon-vector rest-of-vector))
+         (conj first-element [rest-of-vector]))))
    [[(first c-a-nc)]] (rest c-a-nc)))
 
-(defn c-and-nc->exons-with-regions [xs]
+(defn c-and-nc->exons-with-regions [sorted-exons]
   (map
-   (fn [x]
-     {"start" (get (first x) "start")
-      "stop" (get (last x) "stop")
-      "size" (- (get (last x) "stop") (get (first x) "start"))
-      "regions" x }) (c-and-nc->exon-groups xs)))
+   (fn [exon]
+     {"start" (get (first exon) "start")
+      "stop" (get (last exon) "stop")
+      "size" (- (get (last exon) "stop") (get (first exon) "start"))
+      "regions" exon}) (c-and-nc->exon-groups sorted-exons)))
 
 (defn- create-segments [sorted-exons sorted-variants]
   (let [segments (vec
@@ -99,6 +99,13 @@
                        true)]
        [:div {:style {:backgroundColor "white" :padding "20px 16px 20px 32px"}}
         (style/create-underlined-title "Positional distribution")
+
+        [:div {:style {:display "flex" :alignItem "center"}}
+         [:div {:style {:flex "0 0 0.9rem" :height "0.75rem" :backgroundColor "#333" :marginTop "0.2rem"}}]
+         (style/add-style-for-legends "Constitutive Exon")
+         [:div {:style {:flex "0 0 0.9rem" :height "0.75rem" :backgroundColor "#9c9696" :marginTop "0.2rem" :marginLeft "0.4rem"}}]
+         (style/add-style-for-legends "Non-Constitutive Exon")]
+
         [:div {:style {:height 150 :position :relative
                        :backgroundColor (when-not (= code :loaded) "#eee")}}
          [:div {:style {:height 1 :backgroundColor "#ccc"
@@ -107,16 +114,16 @@
                         :display "flex"}}
           (map
            (fn [{:keys [exon? start size regions variants]}]
-             [:div {:style {:flex (str (if exon? size 10) " " (if exon? size 10) " auto")
-                            :backgroundColor (when exon? "#333")}}
-              (create-frequencies start (+ start size) variants)
+             [:div {:style  {:flex (str (if exon? size 30) " " (if exon? size 30) " auto")
+                            :backgroundColor (when exon? "#9c9696")}}
+              (create-frequencies start (- start size) variants)
               (when exon?
                 (let [exon-start start exon-size size]
                   [:div {:style {:display "flex" :height "100%"}}
                    (map
                     (fn [{:strs [start size constitutive]}]
-                      [:div {:style {:flex (str size " " size " auto")
-                                     :backgroundColor (when (= constitutive "c") "#9c9696")}}])
+                      [:div {:style {:flex (str size " " size " auto") :minWidth "0.5em"
+                                     :backgroundColor (when (= constitutive "c") "#333")}}])
                     regions)]))])
            segments)]]]))
    :component-will-receive-props

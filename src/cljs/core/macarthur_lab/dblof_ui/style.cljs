@@ -16,3 +16,18 @@
    [:div {:style {:height 1 :backgroundColor "#ccc" :fontSize "25px" :fontWeight "bolder"
                  :position "absolute" :width "100%" :bottom 30 :left -20}}
     arrow-str]])
+
+(defn add-style-for-legends [legend-text]
+  [:div {:style {:fontSize "80%" :marginLeft "0.5rem" }}
+   legend-text])
+
+(defn create-box [text, backgroundColor]
+  [:span {:style {:backgroundColor backgroundColor
+                  :color "#f2f2f2"
+                  :fontWeight "normal"
+                  :padding "2px 4px"
+                  :borderRadius "5px"
+                  :position "relative"
+                  :display "inline-block"
+                  :borderBottom "1px dotted black"}}
+   text])
