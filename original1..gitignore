@@ -1,0 +1,5 @@
+.env.sh
+.idea/
+dbLoF-UI.iml
+docker/certs/
+lib/
